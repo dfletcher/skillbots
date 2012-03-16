@@ -1,0 +1,149 @@
+<?php
+
+define('STARTING_CASH', 1000);
+
+/**
+ * @file
+ * Module file for Bot v. Bot.
+ */
+
+/**
+ *  Implements hook_menu();
+ */
+function skillbots_menu() {
+  $items = array();
+  $items['skillbots'] = array(
+    'type' => MENU_NORMAL_ITEM,
+    'title' => 'Skillbots',
+    'page callback' => 'skillbots_frontpage',
+    'access arguments' => array('skillbots view frontpage'),
+  );
+  $items['skillbots/front'] = array(
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'title' => 'Skillbots',
+    'page callback' => 'skillbots_frontpage',
+    'access arguments' => array('skillbots view frontpage'),
+    'weight' => 1,
+  );
+  $items['skillbots/arena'] = array(
+    'type' => MENU_LOCAL_TASK,
+    'title' => 'Arena',
+    'page callback' => 'skillbots_arena',
+    'access arguments' => array('skillbots view arena'),
+    'weight' => 2,
+  );
+  $items['skillbots/add'] = array(
+    'type' => MENU_LOCAL_TASK,
+    'title' => 'Create Bot',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('skillbots_add'),
+    'access arguments' => array('skillbots create'),
+    'weight' => 3,
+  );
+  $items['skillbots/leaderboard'] = array(
+    'type' => MENU_LOCAL_TASK,
+    'title' => 'Leaderboard',
+    'page callback' => 'skillbots_leaderboard',
+    'access arguments' => array('battlebot view leaderboard'),
+    'weight' => 4,
+  );
+  return $items;
+}
+
+function skillbots_permission() {
+  return array(
+    'skillbots view frontpage' => array(
+      'title' => t('View front page'), 
+      'description' => t('View skillbots front page.'),
+    ),
+    'skillbots view arena' => array(
+      'title' => t('View arena'), 
+      'description' => t('View skillbots arena page.'),
+    ),
+    'skillbots create' => array(
+      'title' => t('Create bot'), 
+      'description' => t('Create new bot.'),
+    ),
+    'battlebot view leaderboard' => array(
+      'title' => t('View leaderboard'), 
+      'description' => t('View skillbots leaderboard page.'),
+    ),
+  );
+}
+
+function skillbots_frontpage() {
+  $node = node_load(variable_get('skillbots_frontpage_path', 1));
+  node_view($node);
+  return node_show($node);
+}
+
+function skillbots_arena() {
+  return 'arena here';
+}
+
+function skillbots_add() {
+  $form = array();
+  $form['language'] = array(
+    '#type' => 'select',
+    '#title' => t('Language'),
+    '#description' => t('Note: visit the !l for information about building bots in various programming languages.', array('!l' => l('forums', 'forum'))),
+    '#options' => skillbots_get_languages(),
+  );
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Create Bot'),
+  );
+  return $form;
+}
+
+function skillbots_leaderboard() {
+  return 'leaderboard here';
+}
+
+function skillbots_get_languages() {
+  return array(
+    'javascript' => t('JavaScript'),
+    'haskell' => t('Haskell'),
+  );
+}
+
+/**
+ *  Utility function that adds or removes cash from a user bank account and/or
+ *  returns the final amount. Cash value is bounded by (0 <= cash <= INT_MAX).
+ *  @param $uid User id of the account holder. If $uid is zero, the current
+ *              logged in user is used.
+ *  @param $delta If nonzero, add or remove cash from the user account.
+ */
+function skillbots_bank($uid = 0, $delta = 0) {
+  if (!$uid) {
+    global $user;
+    $uid = $user->uid;
+  }
+  $existing = db_select('skb_bank', 'b')
+    ->fields('uid')
+    ->condition('uid', $uid)
+    ->countQuery()
+    ->execute()
+    ->fetchField();
+  if (!$existing) {
+    db_insert('skb_bank')
+      ->fields(array('uid' => $uid, 'cash' => STARTING_CASH))
+      ->execute();
+  }
+  $cash = db_select('skb_bank', 'b')
+    ->fields('cash')
+    ->condition('uid', $uid)
+    ->countQuery()
+    ->execute()
+    ->fetchField();
+  // TODO: detect overflow?
+  $cash += $delta;
+  if ($cash < 0) {
+    $cash = 0;
+  }
+  db_update('skb_bank')
+    ->condition('uid', $uid)
+    ->fields(array('cash' => $cash))
+    ->execute();
+  return $cash;
+}

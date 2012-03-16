@@ -1,0 +1,139 @@
+/**
+ *  @file Example bot.
+ *
+ *  This file shows how to implement a bot.
+ *
+ *  World object format:
+ *
+ *    world.width, world.height
+ *    Dimensions of the world. Bot x,y positions exist on this game grid.
+ *    Worlds are cyclical, if bot motion overflows the world boundaries, it
+ *    will wrap to the opposite side.
+ *
+ *  Bot object format:
+ *
+ *    bot.x, bot.y
+ *    Position on the game board. Game arenas are not all the same size, the
+ *    `world` argument should be checked if position is important. This will
+ *    be changed each round that the bot is in motion.
+ *
+ *    bot.energy
+ *    Bots need energy to move and have a limited capacity. A bot with zero
+ *    energy will be in the 'stop' state. The maximum and starting energy
+ *    depend on the bot hardware.
+ *
+ *    bot.condition
+ *    A floating point value bound at 0<=condition<=1. A condition of 1.0 means
+ *    the bot is in full health. Bots lose health by being fired upon by other
+ *    bots or by crashing into obstacles. If a bot reaches zero health it is
+ *    dead and can take no more actions in the current game arena.
+ *
+ *    bot.speed
+ *    How many grid squares the bot can move in one turn at full power.
+ *
+ *    bot.weapons
+ *    An array of weapon objects representing the weapons the bot has
+ *    available.
+ *
+ *    bot.data
+ *    Store data that persits between game rounds in this object.
+ *
+ *  Obstacle object format:
+ *
+ *    obstacle.x, obstacle.y
+ *    Position of the obstacle in the world.
+ *
+ *    obstacle.radius
+ *    Size of the obstacle.
+ *
+ *  Weapon format:
+ *
+ *    weapon.damage
+ *    Maximum damage that the weapon may do with a direct hit.
+ *
+ *    weapon.angle
+ *    Current angle of the weapon in radians.
+ */
+
+/**
+ *  The Bot functions are the primary bot API, and all must be implemented in a
+ *  successful bot.
+ */
+var Bot = {
+ 
+/**
+ *  Called once per turn to allow the bot to evaluate the current situation and
+ *  potentially change state.
+ *
+ *  Bots are a state machine, and the can be in any of the following states.
+ *
+ *    'stop'
+ *    The default state. The bot is essentially "passing" this turn, taking no
+ *    action. Bot energy increases each round spent stopped. Changing state to
+ *    'stop' when previously in motion is similar to changing directions using
+ *    the return value of Bot.prototype.move, stopping is not instantaneous,
+ *    the bot may take multiple turns to actually come to a full stop,
+ *    depending on the speed. When moving via momentum, the bot will still
+ *    recharge energy.
+ *
+ *    'move'
+ *    Move the bot. 'move' costs 1 energy per turn.
+ *
+ *    'attack'
+ *    Stop and fire bot weapons. 'attack' costs 2 energy per turn.
+ *
+ *    'attack+move'
+ *    Move while firing bot weapons. 'attack+move' costs 4 energy per turn.
+ *
+ *    'defend'
+ *    Reduce damage from enemy weapons. 'defend' costs 1 energy per turn.
+ *
+ *    'defend+move'
+ *    Reduce damage from enemy weapons while moving. 'defend+move' costs 5
+ *    energy per turn.
+ *
+ *  @param world World object.
+ *  @param enemies Array of enemy bots in detection range.
+ *  @param obstacles Array of obstacles in detection range.
+ *  @return State name string, one of the states listed above. Return bot.state
+ *          to leave the state unchanged.
+ */
+stateChange: function(world, enemies, obstacles) {
+  
+},
+
+/**
+ *  Called when the bot is in a motion state. The function must return an Array
+ *  with exactly two items on it: [ DIRECTION, VELOCITY ]. Note that bots
+ *  cannot stop on a dime. When the direction and velocity specified are
+ *  changed, it is taken as a request to stop the current motion and head in
+ *  this new direction, which will happen within the limitations of hardware
+ *  and time.
+ *
+ *  The DIRECTION component should be an angle in radians in which to travel.
+ *
+ *  The VELOCITY component of the return array is bound at 0<=velocity<=1.
+ *
+ *  @param world World object.
+ *  @param enemies Array of enemy bots in detection range.
+ *  @param obstacles Array of obstacles in detection range.
+ *  @return Array as describe above.
+ */
+move: function(world, enemies, obstacles) {
+
+},
+
+/**
+ *  Perform the aim operation when the bot is in a firing state.
+ *
+ *  @param world World object.
+ *  @param weapon Object representing weapon being aimed.
+ *  @param enemies Array of enemy bots in detection range.
+ *  @param obstacles Array of obstacles in detection range.
+ *  @return Array as describe above.
+ */
+aim: function(world, weapon, enemies, obstacles) {
+
+}
+
+};

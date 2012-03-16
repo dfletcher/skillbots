@@ -1,0 +1,217 @@
+<?php
+
+function skillbots_schema() {
+
+  $schema['skb_bot'] = array(
+    'description' => 'Bot storage.',
+    'fields' => array(
+      'bid' => array(
+        'description' => 'The primary identifier for a bot.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'uid' => array(
+        'description' => 'Author of the bot.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'wins' => array(
+        'description' => 'Number of competition wins.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'losses' => array(
+        'description' => 'Number of competition losses.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'name' => array(
+        'description' => 'Bot name.',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'language' => array(
+        'description' => 'Language the bot is written in.',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'path' => array(
+        'description' => 'Path to the source code file.',
+        'type' => 'varchar',
+        'length' => 256,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'binarypath' => array(
+        'description' => 'If the language has compiled binaries, path to binary.',
+        'type' => 'varchar',
+        'length' => 256,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+    ),
+    'indexes' => array(
+      'bot_language' => array('language'),
+    ),
+    'foreign keys' => array(
+      'bot_author' => array(
+        'table' => 'users',
+        'columns' => array('uid' => 'uid'),
+      ),
+    ),
+    'primary key' => array('bid'),
+  );
+
+  $schema['skb_bank'] = array(
+    'description' => 'User funds.',
+    'fields' => array(
+      'uid' => array(
+        'description' => 'Author of the bot.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'cash' => array(
+        'description' => 'User cash reserve.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'foreign keys' => array(
+      'bot_author' => array(
+        'table' => 'users',
+        'columns' => array('uid' => 'uid'),
+      ),
+    ),
+    'primary key' => array('uid'),
+  );
+
+  $schema['skb_arena'] = array(
+    'description' => 'Games queue and processed games.',
+    'fields' => array(
+      'aid' => array(
+        'description' => 'Arena id.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'run' => array(
+        'description' => 'Boolean indicating if the arena has been run.',
+        'type' => 'int',
+        'size' => 'tiny',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('aid'),
+  );
+
+  $schema['skb_arena_bot'] = array(
+    'description' => 'Bots in arenas.',
+    'fields' => array(
+      'aid' => array(
+        'description' => 'Arena id.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'bid' => array(
+        'description' => 'Bot id.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'score' => array(
+        'description' => 'The bot\'s score after the arena has been run.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'foreign keys' => array(
+      'arena_bot_arena' => array(
+        'table' => 'skb_arena',
+        'columns' => array('aid' => 'aid'),
+      ),
+      'arena_bot_bot' => array(
+        'table' => 'skb_bot',
+        'columns' => array('bid' => 'bid'),
+      ),
+    ),
+    'primary key' => array('aid', 'bid'),
+  );
+
+  $schema['skb_arena_stream'] = array(
+    'description' => 'Bots in arenas.',
+    'fields' => array(
+      'sid' => array(
+        'description' => 'Stream id.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'aid' => array(
+        'description' => 'Arena id.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'command' => array(
+        'description' => 'Command enumeration.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'arguments' => array(
+        'description' => 'JSON encoded command arguments. May be NULL if the command does not take args.',
+        'type' => 'varchar',
+        'length' => 256,
+        'not null' => FALSE,
+        'default' => '',
+      ),
+    ),
+    'indexes' => array(
+      'skb_arena_stream_aid' => array('aid'),
+    ),
+    'foreign keys' => array(
+      'arena_stream_arena' => array(
+        'table' => 'skb_arena',
+        'columns' => array('aid' => 'aid'),
+      ),
+    ),
+    'primary key' => array('sid'),
+  );
+
+  return $schema;
+}
+
+function skillbots_install() {
+  db_create_table('skb_bot', drupal_get_schema_unprocessed('skillbots', 'skb_bot'));
+  db_create_table('skb_bank', drupal_get_schema_unprocessed('skillbots', 'skb_bank'));
+  db_create_table('skb_arena', drupal_get_schema_unprocessed('skillbots', 'skb_arena'));
+  db_create_table('skb_arena_bot', drupal_get_schema_unprocessed('skillbots', 'skb_arena_bot'));
+  db_create_table('skb_arena_stream', drupal_get_schema_unprocessed('skillbots', 'skb_arena_stream'));
+  return 'Add database tables for the skillbots module.';
+}
