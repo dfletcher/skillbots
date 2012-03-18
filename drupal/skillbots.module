@@ -1,6 +1,8 @@
 <?php
 
 define('STARTING_CASH', 1000);
+define('BOT_NODE_TYPE', 'bot');
+define('BOT_CODE_DIR', '/var/skillbots/bots/');
 
 /**
  * @file
@@ -12,57 +14,50 @@ define('STARTING_CASH', 1000);
  */
 function skillbots_menu() {
   $items = array();
-  $items['skillbots'] = array(
+  $items['arena'] = array(
     'type' => MENU_NORMAL_ITEM,
-    'title' => 'Skillbots',
-    'page callback' => 'skillbots_frontpage',
-    'access arguments' => array('skillbots view frontpage'),
-  );
-  $items['skillbots/front'] = array(
-    'type' => MENU_DEFAULT_LOCAL_TASK,
-    'title' => 'Skillbots',
-    'page callback' => 'skillbots_frontpage',
-    'access arguments' => array('skillbots view frontpage'),
-    'weight' => 1,
-  );
-  $items['skillbots/arena'] = array(
-    'type' => MENU_LOCAL_TASK,
     'title' => 'Arena',
     'page callback' => 'skillbots_arena',
     'access arguments' => array('skillbots view arena'),
-    'weight' => 2,
+    'weight' => 0,
   );
-  $items['skillbots/add'] = array(
-    'type' => MENU_LOCAL_TASK,
-    'title' => 'Create Bot',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('skillbots_add'),
-    'access arguments' => array('skillbots create'),
-    'weight' => 3,
-  );
-  $items['skillbots/leaderboard'] = array(
-    'type' => MENU_LOCAL_TASK,
+  $items['leaderboard'] = array(
+    'type' => MENU_NORMAL_ITEM,
     'title' => 'Leaderboard',
     'page callback' => 'skillbots_leaderboard',
     'access arguments' => array('battlebot view leaderboard'),
-    'weight' => 4,
+    'weight' => 0,
+  );
+  $items['arena/json/%'] = array(
+    'type' => MENU_CALLBACK,
+    'page callback' => 'skillbots_arena_json',
+    'page arguments' => array(2, 3),
+    'access arguments' => array('skillbots view arena'),
+    'weight' => 0,
   );
   return $items;
 }
 
+function skillbots_arena_json($_aid, $p) {
+  $aid = intval($_aid);
+  $output = '';
+  if ($p == 'p') {
+    $output .= 'parseArenaData(';
+  }
+  $data = array();
+  $output .= drupal_json_encode($data);
+  if ($p == 'p') {
+    $output .= ');';
+  }
+  print($output);
+  exit();
+}
+
 function skillbots_permission() {
   return array(
-    'skillbots view frontpage' => array(
-      'title' => t('View front page'), 
-      'description' => t('View skillbots front page.'),
-    ),
     'skillbots view arena' => array(
       'title' => t('View arena'), 
       'description' => t('View skillbots arena page.'),
-    ),
-    'skillbots create' => array(
-      'title' => t('Create bot'), 
-      'description' => t('Create new bot.'),
     ),
     'battlebot view leaderboard' => array(
       'title' => t('View leaderboard'), 
@@ -71,33 +66,229 @@ function skillbots_permission() {
   );
 }
 
-function skillbots_frontpage() {
-  $node = node_load(variable_get('skillbots_frontpage_path', 1));
-  node_view($node);
-  return node_show($node);
-}
-
 function skillbots_arena() {
   return 'arena here';
 }
 
-function skillbots_add() {
-  $form = array();
-  $form['language'] = array(
-    '#type' => 'select',
-    '#title' => t('Language'),
-    '#description' => t('Note: visit the !l for information about building bots in various programming languages.', array('!l' => l('forums', 'forum'))),
-    '#options' => skillbots_get_languages(),
+function skillbots_form_alter(&$form, &$form_state, $form_id) {
+
+  if ($form_id != (BOT_NODE_TYPE . '_node_form')) {
+    return;
+  }
+  
+  $form['bot'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Bot Code'),
   );
-  $form['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Create Bot'),
+  $form['bot']['ispublic'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Share your bot code'),
+    '#description' => t('Check this if you want others to see your code. It gives away all your secrets!'),
   );
+  if (isset($form_state['node']->ispublic)) {
+    $form['bot']['ispublic']['#default_value'] = $form_state['node']->ispublic;
+  }
+  else if (isset($form_state['node']->bot->ispublic)) {
+    $form['bot']['ispublic']['#default_value'] = $form_state['node']->bot->ispublic;
+  }
+  if (!isset($form_state['node']->training) || $form_state['node']->training) {
+    $form['bot']['botlang'] = array(
+      '#type' => 'select',
+      '#title' => t('Language'),
+      '#description' => t('Note: visit the !l for information about building bots in various programming languages.', array('!l' => l('forums', 'forum'))),
+      '#options' => skillbots_get_languages(),
+      '#required' => TRUE,
+      '#validate' => 'skillbots_validate_language',
+    );
+    if (isset($form_state['node']->botlang)) {
+      $form['bot']['botlang']['#default_value'] = $form_state['node']->botlang;
+    }
+    else if (isset($form_state['node']->bot->language)) {
+      $form['bot']['botlang']['#default_value'] = $form_state['node']->bot->language;
+    }
+    $form['bot']['code'] = array(
+      '#type' => 'textarea',
+      '#title' => t('Bot Code'),
+      '#description' => t('Paste your bot code into here. Maximum code length: 25000 bytes. NOTE: Bots are currently (DEV TIME ONLY) not validated! proceed with caution.'),
+      '#rows' => 8,
+      '#maxlength' => 25000,
+      '#required' => TRUE,
+      // TODO: #validate code
+    );
+    if (isset($form_state['node']->code)) {
+      $form['bot']['code']['#default_value'] = $form_state['node']->code;
+    }
+    else if (isset($form_state['node']->bot->code)) {
+      $form['bot']['code']['#default_value'] = $form_state['node']->bot->code;
+    }
+    else if (isset($form_state['node']->bot->path)) {
+      $form['bot']['code']['#default_value'] = file_get_contents($form_state['node']->bot->path);
+    }
+    if (isset($form_state['node']->nid)) {
+      $form['bot']['compete'] = array(
+        '#type' => 'submit',
+        '#attributes' => array('style' => 'float: right; margin: 8px 20px 16px 16px'),
+        '#value' => 'Ready to Compete!',
+        '#submit' => 'skillbots_bot_compete_verify',
+      );
+      $form['bot']['warning'] = array(
+        '#prefix' => '<div class="small warning" style="margin: 12px">',
+        '#suffix' => '</div>',
+        '#markup' => t('Click this button to begin competing. <em>Warning:</em> once your bot starts competing, the code and language cannot be edited. You will have to !l to make a new version. You might therefore want to add version numbers to your bot\'s name.', array('!l' => l('create a new bot', 'node/add/' . BOT_NODE_TYPE))),
+      );
+    }
+  }
   return $form;
+}
+
+function skillbots_node_load($nodes, $types) {
+  $result = db_query('SELECT bid,nid,language,ispublic,training,path FROM {skb_bot} WHERE nid IN(:nids)', array(':nids' => array_keys($nodes)));
+  foreach ($result as $record) {
+    $nodes[$record->nid]->bot = new StdClass;
+    $nodes[$record->nid]->bot->bid = $record->bid;
+    $nodes[$record->nid]->bot->language = $record->language;
+    $nodes[$record->nid]->bot->ispublic = $record->ispublic;
+    $nodes[$record->nid]->bot->training = $record->training;
+    $nodes[$record->nid]->bot->path = $record->path;
+  }
+}
+
+function skillbots_node_view($node, $view_mode, $langcode) {
+  if ($node->type != BOT_NODE_TYPE) {
+    return;
+  }
+  $node->content['botlang'] = array(
+    '#prefix' => '<div><b>Language:</b> <code>',
+    '#markup' => $node->bot->language,
+    '#suffix' => '</code></div>',
+    '#weight' => 0, 
+  );
+  if ($view_mode == 'full') {
+    if (!isset($node->bot->code) && $node->bot->path) {
+      $node->bot->code = file_get_contents($node->bot->path);
+    }
+    $node->content['code'] = array(
+      '#prefix' => '<code><pre>',
+      '#markup' => $node->bot->code,
+      '#suffix' => '</pre></code>',
+      '#weight' => 10, 
+    );
+  }
+}
+
+function skillbots_validate_language($form, &$form_state) {
+  $values = $form_state['values'];
+  if (!$values['botlang']) {
+    form_set_error('botlang', 'Please select a language.');
+  }
+  if (!array_key_exists($values['botlang'], skillbots_get_languages())) {
+    form_set_error('botlang', 'Language "' . $values['botlang'] . '" is not in the supported languages list.');
+  }
+}
+
+function skillbots_node_submit(&$node, $form, &$form_state) {
+  if ($node->type != BOT_NODE_TYPE) {
+    return;
+  }
+  if (!isset($node->bot)) {
+    $node->bot = new StdClass;
+  }
+  if (!isset($node->bot->path)) {
+    $node->bot->path = FALSE;
+  }
+  $node->bot->code = $form_state['values']['code'];
+  $node->bot->language = $form_state['values']['botlang'];
+  $node->bot->ispublic = $form_state['values']['ispublic'];
+}
+
+function skillbots_node_insert($node) {
+
+  if ($node->type != BOT_NODE_TYPE) {
+    return;
+  }
+
+  global $user;
+  $path = tempnam(BOT_CODE_DIR, $node->bot->language . '-');
+  if (!file_put_contents($path, $node->bot->code)) {
+    drupal_set_message("Fatal: Could not write code file to disk, exiting without bot creation. Please report this bug.");
+    return;
+  }
+
+  $bid = db_insert('skb_bot')->fields(array(
+    'uid' => $user->uid,
+    'language' => $node->bot->language,
+    'ispublic' => $node->bot->ispublic,
+    'nid' => $node->nid,
+    'path' => $path,
+  ))->execute();
+
+  if (!$bid) {
+    drupal_set_message("Fatal: Could not create bot record, exiting without bot creation. Please report this bug.");
+    unlink($path);
+    return;
+  }
+
+  foreach (skillbots_get_arenas() as $arena) {
+    for ($i = 0; $i < $arena['heatcount']; $i++) {
+      $aid = db_insert('skb_arena')->fields(array('run' => 0))->execute();
+      $q = db_select('skb_bot', 'b')
+        ->fields('b', array('bid'))
+        ->condition('b.bid', $bid, '!=')
+        ->orderRandom()
+        ->range(0, $arena['capacity'] - 1);
+      if (!$q->countQuery()->execute()->fetchField()) {
+        drupal_set_message("Warning: could not find other bots to put in the arena (first bot?)");
+        return;
+      }
+      foreach ($q->execute() as $o) {
+        db_insert('skb_arena_bot')->fields(array(
+          'aid' => $aid,
+          'bid' => $o->bid,
+        ))->execute();
+      }
+      db_insert('skb_arena_bot')->fields(array(
+        'aid' => $aid,
+        'bid' => $bid,
+      ))->execute();
+    }
+  }
+
+}
+
+function skillbots_node_update($node) {
+
+  // Only work on bot nodes.
+  if ($node->type != BOT_NODE_TYPE) {
+    return;
+  }
+
+  // Database record update.
+  $bid = db_update('skb_bot')->condition('bid', $node->bot->bid)->fields(array(
+    'language' => $node->bot->language,
+    'ispublic' => $node->bot->ispublic,
+  ))->execute();
+
+  // Rewrite the file.
+  if (!file_put_contents($node->bot->path, $node->bot->code)) {
+    drupal_set_message("Fatal: Could not update code file.");
+  }
+
+}
+
+function skillbots_bot_compete_verify() {
+  
 }
 
 function skillbots_leaderboard() {
   return 'leaderboard here';
+}
+
+function skillbots_get_arenas() {
+  return array(
+    array('heatcount' => 6, 'capacity' => 2),
+    array('heatcount' => 4, 'capacity' => 4),
+    array('heatcount' => 2, 'capacity' => 8),
+  );
 }
 
 function skillbots_get_languages() {

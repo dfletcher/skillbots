@@ -18,26 +18,26 @@ function skillbots_schema() {
         'not null' => TRUE,
         'default' => 0,
       ),
-      'wins' => array(
-        'description' => 'Number of competition wins.',
+      'nid' => array(
+        'description' => 'Related bot node.',
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
         'default' => 0,
       ),
-      'losses' => array(
-        'description' => 'Number of competition losses.',
+      'ispublic' => array(
+        'description' => 'Boolean indicating if the author wants to publish the code.',
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
         'default' => 0,
       ),
-      'name' => array(
-        'description' => 'Bot name.',
-        'type' => 'varchar',
-        'length' => 32,
+      'training' => array(
+        'description' => 'Boolean indicating if the bot is in training mode.',
+        'type' => 'int',
+        'unsigned' => TRUE,
         'not null' => TRUE,
-        'default' => '',
+        'default' => 1,
       ),
       'language' => array(
         'description' => 'Language the bot is written in.',
@@ -49,14 +49,7 @@ function skillbots_schema() {
       'path' => array(
         'description' => 'Path to the source code file.',
         'type' => 'varchar',
-        'length' => 256,
-        'not null' => TRUE,
-        'default' => '',
-      ),
-      'binarypath' => array(
-        'description' => 'If the language has compiled binaries, path to binary.',
-        'type' => 'varchar',
-        'length' => 256,
+        'length' => 64,
         'not null' => TRUE,
         'default' => '',
       ),
@@ -69,8 +62,88 @@ function skillbots_schema() {
         'table' => 'users',
         'columns' => array('uid' => 'uid'),
       ),
+      'bot_node' => array(
+        'table' => 'node',
+        'columns' => array('nid' => 'nid'),
+      ),
     ),
     'primary key' => array('bid'),
+  );
+
+  $schema['skb_bot_available_addon'] = array(
+    'description' => 'Available add-ons.',
+    'fields' => array(
+      'aid' => array(
+        'description' => 'The primary identifier for an add-on.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'name' => array(
+        'description' => 'Add-on name.',
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'category' => array(
+        'description' => 'Ad-hoc add-on category.',
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'iconpath' => array(
+        'description' => 'Path to add-on icon.',
+        'type' => 'varchar',
+        'length' => 64,
+      ),
+      'description' => array(
+        'description' => 'Add-on description.',
+        'type' => 'varchar',
+        'length' => 512,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'extension' => array(
+        'description' => 'Javascript code extension.',
+        'type' => 'varchar',
+        'length' => 2048,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+    ),
+    'primary key' => array('aid'),
+  );
+
+  $schema['skb_bot_addon'] = array(
+    'description' => 'Bot add-on components.',
+    'fields' => array(
+      'bid' => array(
+        'description' => 'Bot ID.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'aid' => array(
+        'description' => 'Add-on ID.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'indexes' => array(
+      'bot_addon_bid' => array('bid'),
+    ),
+    'foreign keys' => array(
+      'bot_addon_bot' => array(
+        'table' => 'skb_bot',
+        'columns' => array('bid' => 'bid'),
+      ),
+    ),
+    'primary key' => array('bid', 'aid'),
   );
 
   $schema['skb_bank'] = array(
@@ -105,10 +178,9 @@ function skillbots_schema() {
     'fields' => array(
       'aid' => array(
         'description' => 'Arena id.',
-        'type' => 'int',
+        'type' => 'serial',
         'unsigned' => TRUE,
         'not null' => TRUE,
-        'default' => 0,
       ),
       'run' => array(
         'description' => 'Boolean indicating if the arena has been run.',
@@ -147,6 +219,9 @@ function skillbots_schema() {
         'default' => 0,
       ),
     ),
+    'indexes' => array(
+      'arena_bot_bid' => array('bid'),
+    ),
     'foreign keys' => array(
       'arena_bot_arena' => array(
         'table' => 'skb_arena',
@@ -165,10 +240,9 @@ function skillbots_schema() {
     'fields' => array(
       'sid' => array(
         'description' => 'Stream id.',
-        'type' => 'int',
+        'type' => 'serial',
         'unsigned' => TRUE,
         'not null' => TRUE,
-        'default' => 0,
       ),
       'aid' => array(
         'description' => 'Arena id.',
@@ -208,10 +282,9 @@ function skillbots_schema() {
 }
 
 function skillbots_install() {
-  db_create_table('skb_bot', drupal_get_schema_unprocessed('skillbots', 'skb_bot'));
-  db_create_table('skb_bank', drupal_get_schema_unprocessed('skillbots', 'skb_bank'));
-  db_create_table('skb_arena', drupal_get_schema_unprocessed('skillbots', 'skb_arena'));
-  db_create_table('skb_arena_bot', drupal_get_schema_unprocessed('skillbots', 'skb_arena_bot'));
-  db_create_table('skb_arena_stream', drupal_get_schema_unprocessed('skillbots', 'skb_arena_stream'));
-  return 'Add database tables for the skillbots module.';
+  drupal_install_schema('skillbots');
+}
+
+function skillbots_uninstall() {
+  drupal_uninstall_schema('skillbots');
 }

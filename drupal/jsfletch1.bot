@@ -1,0 +1,67 @@
+
+function a(x1, y1) {
+  "use strict";
+  if ((typeof(arguments[2]) !== 'undefined') && (typeof(arguments[3]) !== 'undefined')) {
+    return Math.atan2(x1-arguments[2], y1-arguments[3]);
+  }
+  return Math.atan2(0-x1, 0-y1);
+}
+
+function dir(n) {
+  "use strict";
+  if      ((n >= -0.39269908169872414) && (n <  0.39269908169872414)) { return 'n'; }
+  else if ((n >=  0.39269908169872414) && (n <  1.17809724509617240)) { return 'nw'; }
+  else if ((n >=  1.17809724509617240) && (n <  1.96349540849362070)) { return 'w'; }
+  else if ((n >=  1.96349540849362070) && (n <  2.74889357189106900)) { return 'sw'; }
+  else if (n >=  2.74889357189106900) { return 's'; }
+  else if ((n <  -0.39269908169872414) && (n >= -1.1780972450961724)) { return 'ne'; }
+  else if ((n <  -1.17809724509617240) && (n >= -1.9634954084936207)) { return 'e'; }
+  else if ((n <  -1.96349540849362070) && (n >= -2.7488935718910690)) { return 'se'; }
+  else if (n <   2.74889357189106900) { return 's'; }
+  return 's';
+}
+
+function radrot(n, a) {
+  "use strict";
+  return (n + a) % Math.PI;
+}
+
+var Bot = {
+
+  stateChange: function(world, enemies, obstacles) {
+    "use strict";
+    if (obstacles.length) {
+      return 'move'; // RUN!!!
+    }
+    else if (enemies.length) {
+      return 'fire+move'; // CHARGE!!!
+    }
+    else {
+      return this.state;
+    }
+  },
+
+  move: function(world, enemies, obstacles) {
+    "use strict";
+    var direction = 'sw';
+    var velocity = 1.0;
+    if (obstacles.length) {
+      direction = dir(radrot(a(this.x, this.y, obstacles[0].x, obstacles[0].y), Math.PI/2)); // Run away.
+    }
+    else if (enemies.length) {
+      direction = dir(a(this.x, this.y, enemies[0].x, enemies[0].y)); // Run towards.
+    }
+    return [ direction, velocity ];
+  },
+
+  aim: function(world, weapon, enemies, obstacles) {
+    "use strict";
+    if (enemies.length) {
+      return a(this.x, this.y, enemies[0].x, enemies[0].y); // Pew pew pew!
+    }
+    else {
+      return 0; // Nothing to aim at.
+    }
+  }
+
+};

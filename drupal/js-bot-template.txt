@@ -3,18 +3,22 @@
  *
  *  This file shows how to implement a bot.
  *
- *  World object format:
+ *  Arena object format:
  *
- *    world.width, world.height
- *    Dimensions of the world. Bot x,y positions exist on this game grid.
- *    Worlds are cyclical, if bot motion overflows the world boundaries, it
+ *    arena.width, arena.height
+ *    Dimensions of the arena. Bot x,y positions exist on this game grid.
+ *    Arenas are cyclical, if bot motion overflows the arena boundaries, it
  *    will wrap to the opposite side.
+ *
+ *    arena.time
+ *    Current time (number of rounds) since start of game. Starts at zero
+ *    and increases until end of battle.
  *
  *  Bot object format:
  *
  *    bot.x, bot.y
  *    Position on the game board. Game arenas are not all the same size, the
- *    `world` argument should be checked if position is important. This will
+ *    `arena` argument should be checked if position is important. This will
  *    be changed each round that the bot is in motion.
  *
  *    bot.energy
@@ -35,13 +39,10 @@
  *    An array of weapon objects representing the weapons the bot has
  *    available.
  *
- *    bot.data
- *    Store data that persits between game rounds in this object.
- *
  *  Obstacle object format:
  *
  *    obstacle.x, obstacle.y
- *    Position of the obstacle in the world.
+ *    Position of the obstacle in the arena.
  *
  *    obstacle.radius
  *    Size of the obstacle.
@@ -68,16 +69,16 @@ var Bot = {
  *  Bots are a state machine, and the can be in any of the following states.
  *
  *    'stop'
- *    The default state. The bot is essentially "passing" this turn, taking no
- *    action. Bot energy increases each round spent stopped. Changing state to
- *    'stop' when previously in motion is similar to changing directions using
- *    the return value of Bot.prototype.move, stopping is not instantaneous,
+ *    The bot is essentially "passing" this turn, taking no action. Bot energy
+ *    increases each round spent stopped. Changing state to 'stop' when
+ *    previously in motion is similar to changing directions using the return
+ *    value of Bot.prototype.move, stopping is not instantaneous,
  *    the bot may take multiple turns to actually come to a full stop,
  *    depending on the speed. When moving via momentum, the bot will still
  *    recharge energy.
  *
  *    'move'
- *    Move the bot. 'move' costs 1 energy per turn.
+ *    The default state. Move the bot. 'move' costs 1 energy per turn.
  *
  *    'attack'
  *    Stop and fire bot weapons. 'attack' costs 2 energy per turn.
@@ -92,13 +93,13 @@ var Bot = {
  *    Reduce damage from enemy weapons while moving. 'defend+move' costs 5
  *    energy per turn.
  *
- *  @param world World object.
+ *  @param arena Arena object.
  *  @param enemies Array of enemy bots in detection range.
  *  @param obstacles Array of obstacles in detection range.
  *  @return State name string, one of the states listed above. Return bot.state
  *          to leave the state unchanged.
  */
-stateChange: function(world, enemies, obstacles) {
+stateChange: function(arena, enemies, obstacles) {
   
 },
 
@@ -114,25 +115,25 @@ stateChange: function(world, enemies, obstacles) {
  *
  *  The VELOCITY component of the return array is bound at 0<=velocity<=1.
  *
- *  @param world World object.
+ *  @param arena Arena object.
  *  @param enemies Array of enemy bots in detection range.
  *  @param obstacles Array of obstacles in detection range.
  *  @return Array as describe above.
  */
-move: function(world, enemies, obstacles) {
+move: function(arena, enemies, obstacles) {
 
 },
 
 /**
  *  Perform the aim operation when the bot is in a firing state.
  *
- *  @param world World object.
+ *  @param arena Arena object.
  *  @param weapon Object representing weapon being aimed.
  *  @param enemies Array of enemy bots in detection range.
  *  @param obstacles Array of obstacles in detection range.
  *  @return Array as describe above.
  */
-aim: function(world, weapon, enemies, obstacles) {
+aim: function(arena, enemies, obstacles, weapon) {
 
 }
 
