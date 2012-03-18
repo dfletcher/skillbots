@@ -10,7 +10,7 @@
 using namespace v8;
 
 std::string init_cmd("init");
-std::string stateChange_cmd("stateChange");
+std::string stateChange_cmd("state-change");
 std::string aim_cmd("aim");
 std::string move_cmd("move");
 std::string quit_cmd("quit");
