@@ -16,6 +16,7 @@ std::string move_cmd("move");
 std::string quit_cmd("quit");
 std::string time_cmd("time");
 std::string obstacle_cmd("obstacle");
+std::string obstacle_inrange_cmd("obstacle-in-range");
 std::string weapon_cmd("weapon");
 std::string enemy_cmd("enemy");
 std::string enemy_weapon_cmd("enemy-weapon");
@@ -375,6 +376,10 @@ int main(int argc, char* argv[]) {
       obstacles[id].radius = str2int(linevec[4]);
       std::cout << "ok" << std::endl;
     }
+    else if (obstacle_inrange_cmd.compare(linevec[0]) == 0) {
+      int id = str2int(linevec[1]);
+      obstacles[id].inrange = (str2int(linevec[2]) == 0) ? true : false;
+    }
     else if (weapon_cmd.compare(linevec[0]) == 0) {
       int id = str2int(linevec[1]);
       weapons[id].power = str2double(linevec[2]);
@@ -388,6 +393,7 @@ int main(int argc, char* argv[]) {
       enemies[id].energy = str2double(linevec[4]);
       enemies[id].condition = str2double(linevec[5]);
       enemies[id].speed = str2double(linevec[6]);
+      enemies[id].inrange = (str2int(linevec[7]) == 0) ? true : false;
       std::cout << "ok" << std::endl;
     }
     else if (enemy_weapon_cmd.compare(linevec[0]) == 0) {
