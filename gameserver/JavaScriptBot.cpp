@@ -10,7 +10,7 @@
 using namespace v8;
 
 std::string init_cmd("init");
-std::string stateChange_cmd("state-change");
+std::string state_change_cmd("state-change");
 std::string aim_cmd("aim");
 std::string move_cmd("move");
 std::string quit_cmd("quit");
@@ -40,11 +40,12 @@ std::string state_defend_move("defend+move");
 
 class Arena {
   public:
-    int w, h, t;
+    int w, h, t, d;
     Arena() {
       w = 0;
       h = 0;
       t = 0;
+      d = 0;
     }
 };
 
@@ -251,6 +252,7 @@ void prepare_args(Handle<Value> *args, Arena &arena, std::map<int, Enemy> &enemi
   argarena->Set(String::New("width"), Integer::New(arena.w));
   argarena->Set(String::New("height"), Integer::New(arena.h));
   argarena->Set(String::New("time"), Integer::New(arena.t));
+  argarena->Set(String::New("duration"), Integer::New(arena.d));
   args[0] = argarena;
 
   // enemies
@@ -335,10 +337,11 @@ int main(int argc, char* argv[]) {
       bot->Set(String::New("state"), String::New("move"));
       arena.w = str2int(linevec[1]);
       arena.h = str2int(linevec[2]);
+      arena.d = str2int(linevec[3]);
       arena.t = 0;
       std::cout << "ok" << std::endl;
     }
-    else if (stateChange_cmd.compare(linevec[0]) == 0) {
+    else if (state_change_cmd.compare(linevec[0]) == 0) {
       HandleScope local_scope;
       prepare_args(args, arena, enemies, obstacles);
       if (!handle_stateChange(bot, args, stateChange)) {
@@ -388,9 +391,9 @@ int main(int argc, char* argv[]) {
     }
     else if (enemy_cmd.compare(linevec[0]) == 0) {
       int id = str2int(linevec[1]);
-      enemies[id].x = str2double(linevec[2]);
-      enemies[id].y = str2double(linevec[3]);
-      enemies[id].energy = str2double(linevec[4]);
+      enemies[id].x = str2int(linevec[2]);
+      enemies[id].y = str2int(linevec[3]);
+      enemies[id].energy = str2int(linevec[4]);
       enemies[id].condition = str2double(linevec[5]);
       enemies[id].speed = str2double(linevec[6]);
       enemies[id].inrange = (str2int(linevec[7]) == 0) ? true : false;
