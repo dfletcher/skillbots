@@ -142,10 +142,8 @@ if __name__ == '__main__':
       # Update everybody's state.
       for bot in bots:
 
-        # Update time.
-        bot.program.cmd_time(t)
-
         # Update remote bot.
+        bot.program.cmd_time(t)
         bot.program.cmd_bot(bot)
 
         # Tell remote if obstacles are in range.
@@ -167,7 +165,6 @@ if __name__ == '__main__':
 
       # Everybody who's moving, move.
       for bot in bots:
-        s = bot.state
         if bot.state in ('move', 'attack+move', 'defend+move'):
 
           # Change bot direction.
