@@ -118,10 +118,10 @@ class BotProgram(threading.Thread):
       (obstacle.id, 1 if inrange else 0)
     )
 
-  def cmd_weapon(self, weaponid, power, aim):
+  def cmd_weapon(self, w):
     return self.write_cmd(
       'weapon %d %f %f' %
-      (weaponid, power, aim)
+      (w.id, w.power, w.aim)
     )
 
   def cmd_enemy(self, e, inrange):
@@ -130,10 +130,10 @@ class BotProgram(threading.Thread):
       (e.id, e.x, e.y, e.energy, e.condition, e.speed, 1 if inrange else 0)
     )
 
-  def cmd_enemy_weapon(self, enemyid, weaponid, power, aim):
+  def cmd_enemy_weapon(self, e, w):
     return self.write_cmd(
       'enemy-weapon %d %d %f %f' %
-      (enemyid, weaponid, power, aim)
+      (e.id, w.id, w.power, w.aim)
     )
 
   def cmd_bot(self, b):
