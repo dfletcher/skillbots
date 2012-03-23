@@ -42,7 +42,10 @@ class Bot(object):
     self.weapons = [ Weapon(self) ]
 
   def inrange(self, other):
-    pass
+    """ Test if an enemy is in scanning range of this bot. """
+    # TODO: this could be better optimized.
+    d = sqrt( math.pow(self.x - other.x, 2) + math.pow(self.y - other.y, 2) )
+    return d <= self.scanning_range
 
 class Obstacle(object):
 
@@ -53,7 +56,16 @@ class Obstacle(object):
     self.id = id
 
   def inrange(self, bot):
-    pass
+    """ Test if this obstacle is in scanning range of a bot. """
+    # TODO: this could be better optimized.
+    d = sqrt( math.pow(self.x - bot.x, 2) + math.pow(self.y - bot.y, 2) )
+    return d <= bot.scanning_range
+
+  def occupies(self, x, y):
+    """ Test if this obstacle occupies grid location x,y. """
+    # TODO: this could be better optimized.
+    d = sqrt( math.pow(self.x - x, 2) + math.pow(self.y - y, 2) )
+    return d <= self.r
 
 db=MySQLdb.connect(user="root", db="damnart_com")
 
@@ -177,7 +189,7 @@ if __name__ == '__main__':
 
           # Check for collisions with obstacles.
           for obstacle in obstacles:
-            if obstacle.in_grid(nx, ny):
+            if obstacle.occupies(nx, ny):
               # TODO: collision with obstacle, damage
               break
 
@@ -197,15 +209,15 @@ if __name__ == '__main__':
         if bot.state in ('attack', 'attack+move'):
           for weapon in bot.weapons:
             targettype, target, endx, endy = weapon.fire()
-            if targettype == 'none':
-              pass
-            elif targettype == 'obstacle':
-              pass
             if targettype == 'enemy':
               # TODO: calculate damage here
               if target.state == 'defend': pass
               elif target.state == 'defend+move': pass
               else: pass
+            elif targettype == 'obstacle':
+              pass
+            else:
+              pass
             # TODO: notify bot and enemies in range about shot
 
     for bot in bots: bot.program.cmd_quit()
