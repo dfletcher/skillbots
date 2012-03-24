@@ -115,7 +115,7 @@ int handle_init(Persistent<Context> &context, const char *path, Persistent<Objec
   // Read source file.
   std::stringstream botcode;
   if (!readfile(path, botcode)) {
-    std::cout << "FATAL: could not read source file: " << path << std::endl;
+    std::cerr << "FATAL: could not read source file: " << path << std::endl;
     return 0;
   }
   Handle<String> source = String::New(botcode.str().c_str());
@@ -126,11 +126,11 @@ int handle_init(Persistent<Context> &context, const char *path, Persistent<Objec
     script = Script::Compile(source, String::New(path));
   }
   catch(...) {
-    std::cout << "FATAL: exception compiling source file: " << path << std::endl;
+    std::cerr << "FATAL: exception compiling source file: " << path << std::endl;
     return 0;
   }
   if (!*script) {
-    std::cout << "FATAL: failed to compile source file: " << path << std::endl;
+    std::cerr << "FATAL: failed to compile source file: " << path << std::endl;
     return 0;
   }
 
@@ -139,14 +139,14 @@ int handle_init(Persistent<Context> &context, const char *path, Persistent<Objec
     script->Run();
   }
   catch(...) {
-    std::cout << "FATAL: exception evaluating source file: " << path << std::endl;
+    std::cerr << "FATAL: exception evaluating source file: " << path << std::endl;
     return 0;
   }
 
   // The bot code should have left a global Bot object, test it.
   Handle<Value> _bot = context->Global()->Get(String::New("Bot"));
   if (!_bot->IsObject()) {
-    std::cout << "FATAL: global Bot object not defined in: " << path << std::endl;
+    std::cerr << "FATAL: global Bot object not defined in: " << path << std::endl;
     return 0;
   }
   *bot = Persistent<Object>::New(_bot->ToObject());
@@ -154,7 +154,7 @@ int handle_init(Persistent<Context> &context, const char *path, Persistent<Objec
   // The bot object must have stateChange() function.
   Handle<Value> func = (*bot)->Get(String::New("stateChange"));
   if (!func->IsFunction()) {
-    std::cout << "FATAL: Bot.stateChange() not defined in: " << path << std::endl;
+    std::cerr << "FATAL: Bot.stateChange() not defined in: " << path << std::endl;
     return 0;
   }
   *stateChange = Persistent<Value>::New(func);
@@ -162,7 +162,7 @@ int handle_init(Persistent<Context> &context, const char *path, Persistent<Objec
   // The bot object must have aim() function.
   func = (*bot)->Get(String::New("aim"));
   if (!func->IsFunction()) {
-    std::cout << "FATAL: Bot.aim() not defined in: " << path << std::endl;
+    std::cerr << "FATAL: Bot.aim() not defined in: " << path << std::endl;
     return 0;
   }
   *aim = Persistent<Value>::New(func);
@@ -170,7 +170,7 @@ int handle_init(Persistent<Context> &context, const char *path, Persistent<Objec
   // The bot object must have move() function.
   func = (*bot)->Get(String::New("move"));
   if (!func->IsFunction()) {
-    std::cout << "FATAL: Bot.move() not defined in: " << path << std::endl;
+    std::cerr << "FATAL: Bot.move() not defined in: " << path << std::endl;
     return 0;
   }
   *move = Persistent<Value>::New(func);
@@ -182,12 +182,12 @@ int handle_init(Persistent<Context> &context, const char *path, Persistent<Objec
 int handle_stateChange(Handle<Object> &bot, Handle<Value> *args, Persistent<Value> &stateChange) {
   Handle<Value> result = Function::Cast(*stateChange)->Call(bot, 4, args);
   if (!result->IsString()) {
-    std::cout << "FATAL: broken stateChange() implementation, it must return a string." << std::endl;
+    std::cerr << "FATAL: broken stateChange() implementation, it must return a string." << std::endl;
     return 0;
   }
   String::AsciiValue ascii(result);
   if ((state_stop.compare(*ascii) != 0) && (state_move.compare(*ascii) != 0) && (state_attack.compare(*ascii) != 0) && (state_attack_move.compare(*ascii) != 0) && (state_defend.compare(*ascii) != 0) && (state_defend_move.compare(*ascii) != 0)) {
-    std::cout << "FATAL: broken stateChange() implementation, returned unknown state, should be one of: (stop,move,attack,attack+move,defend,defend+move) but received: " << *ascii << std::endl;
+    std::cerr << "FATAL: broken stateChange() implementation, returned unknown state, should be one of: (stop,move,attack,attack+move,defend,defend+move) but received: " << *ascii << std::endl;
     return 0;
   }
   std::cout << *ascii << std::endl;
@@ -197,27 +197,27 @@ int handle_stateChange(Handle<Object> &bot, Handle<Value> *args, Persistent<Valu
 int handle_move(Handle<Object> &bot, Handle<Value> *args, Persistent<Value> &move) {
   Handle<Value> result = Function::Cast(*move)->Call(bot, 4, args);
   if (!result->IsArray()) {
-    std::cout << "FATAL: broken move() implementation, did not return an array." << std::endl;
+    std::cerr << "FATAL: broken move() implementation, did not return an array." << std::endl;
     return 0;
   }
   Array *a = Array::Cast(*result);
   if (a->Length() != 2) {
-    std::cout << "FATAL: broken move() implementation, returned array must contain exactly two items." << std::endl;
+    std::cerr << "FATAL: broken move() implementation, returned array must contain exactly two items." << std::endl;
     return 0;
   }
   Handle<Value> a0 = a->Get(0);
   if (!a0->IsString()) {
-    std::cout << "FATAL: broken move() implementation, first element of returned array must be a string." << std::endl;
+    std::cerr << "FATAL: broken move() implementation, first element of returned array must be a string." << std::endl;
     return 0;
   }
   String::AsciiValue a0ascii(a0);
   if ((dir_n.compare(*a0ascii) != 0) && (dir_ne.compare(*a0ascii) != 0) && (dir_e.compare(*a0ascii) != 0) && (dir_se.compare(*a0ascii) != 0) && (dir_s.compare(*a0ascii) != 0) && (dir_sw.compare(*a0ascii) != 0) && (dir_w.compare(*a0ascii) != 0) && (dir_nw.compare(*a0ascii) != 0)) {
-    std::cout << "FATAL: broken move() implementation, first element of returned array returned unknown direction should be one of: (n,ne,e,se,s,sw,w,nw) but received: " << *a0ascii << std::endl;
+    std::cerr << "FATAL: broken move() implementation, first element of returned array returned unknown direction should be one of: (n,ne,e,se,s,sw,w,nw) but received: " << *a0ascii << std::endl;
     return 0;
   }
   Handle<Value> a1 = a->Get(1);
   if (!a1->IsNumber()) {
-    std::cout << "FATAL: broken move() implementation, second element of returned array must be numeric." << std::endl;
+    std::cerr << "FATAL: broken move() implementation, second element of returned array must be numeric." << std::endl;
     return 0;
   }
   String::AsciiValue a1ascii(a1);
@@ -228,7 +228,7 @@ int handle_move(Handle<Object> &bot, Handle<Value> *args, Persistent<Value> &mov
 int handle_aim(Handle<Object> &bot, Handle<Value> *args, Persistent<Value> &aim) {
   Handle<Value> result = Function::Cast(*aim)->Call(bot, 4, args);
   if (!result->IsNumber()) {
-    std::cout << "FATAL: broken aim() implementation, it must return a number." << std::endl;
+    std::cerr << "FATAL: broken aim() implementation, it must return a number." << std::endl;
     return 0;
   }
   String::AsciiValue ascii(result);
@@ -315,7 +315,7 @@ int main(int argc, char* argv[]) {
   reset_args(args);
 
   if (argc != 2) {
-    std::cout << "FATAL: incorrect program usage: " << argv[0] << " (path to bot file)" << std::endl;
+    std::cerr << "FATAL: incorrect program usage: " << argv[0] << " (path to bot file)" << std::endl;
     return 1;
   }
 
@@ -381,7 +381,7 @@ int main(int argc, char* argv[]) {
     }
     else if (obstacle_inrange_cmd.compare(linevec[0]) == 0) {
       int id = str2int(linevec[1]);
-      obstacles[id].inrange = (str2int(linevec[2]) == 0) ? true : false;
+      obstacles[id].inrange = (str2int(linevec[2]) == 1) ? true : false;
       std::cout << "ok" << std::endl;
     }
     else if (weapon_cmd.compare(linevec[0]) == 0) {
@@ -397,7 +397,7 @@ int main(int argc, char* argv[]) {
       enemies[id].energy = str2int(linevec[4]);
       enemies[id].condition = str2double(linevec[5]);
       enemies[id].speed = str2double(linevec[6]);
-      enemies[id].inrange = (str2int(linevec[7]) == 0) ? true : false;
+      enemies[id].inrange = (str2int(linevec[7]) == 1) ? true : false;
       std::cout << "ok" << std::endl;
     }
     else if (enemy_weapon_cmd.compare(linevec[0]) == 0) {

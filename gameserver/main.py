@@ -6,6 +6,7 @@ import random
 import MySQLdb
 import traceback
 import BotProgram
+from Log import log
 from time import sleep
 
 # from http://snipplr.com/view.php?codeview&id=22482
@@ -109,7 +110,7 @@ class Obstacle(object):
     """ Test if this obstacle is in scanning range of a bot. """
     # TODO: this could be better optimized.
     d = math.sqrt( math.pow(self.x - bot.x, 2) + math.pow(self.y - bot.y, 2) )
-    return d <= bot.scanning_range
+    return d <= (bot.scanning_range + self.r)
 
   def occupies(self, x, y):
     """ Test if this obstacle occupies grid location x,y. """
@@ -165,7 +166,7 @@ if __name__ == '__main__':
 
     # init obstacles
     obstacles = []
-    numobstacles = int(math.sqrt(arenawidth * arenaheight) / 3)
+    numobstacles = int(math.sqrt(arenawidth * arenaheight) / 4)
     numobstacles += random.randint(-5, 5)
     for i in range(numobstacles):
       r = random.randint(1, 4)
@@ -206,8 +207,8 @@ if __name__ == '__main__':
     for t in range(arenaduration):
 
       # Print the arena.
-      print 'time: ' + str(t)
-      print '-' * (arenawidth+2)
+      log('time: ' + str(t))
+      log('-' * (arenawidth+2))
       for y in range(0, arenaheight):
         line = ''
         for x in range(0, arenawidth):
@@ -217,9 +218,9 @@ if __name__ == '__main__':
           for bot in bots:
             if bot.x == x and bot.y == y: c = str(bot.id)
           line += c
-        print '|' + line + '|'
-      print '-' * (arenawidth+2)
-      print
+        log('|' + line + '|')
+      log('-' * (arenawidth+2))
+      log()
 
       # Update everybody's state.
       for bot in bots:
@@ -295,39 +296,39 @@ if __name__ == '__main__':
               damage = 0.3
               if target.state == 'defend': damage = 0.1
               if target.state == 'defend+move': damage = 0.2
-              print("bot %d shot bot %d at (%d,%d) for damage %f" % (bot.id, target.id, target.x, target.y, damage))
+              log("bot %d shot bot %d at (%d,%d) for damage %f" % (bot.id, target.id, target.x, target.y, damage))
               target.damage(damage)
               # TODO: notify target that it was hit
               # TODO: notify bot that it made a hit
               # TODO: notify other bots in range about the hit
             elif targettype == 'enemy':
-              print("bot %d shot obtacle %d at (%d,%d)" % (bot.id, target.id, target.x, target.y))
+              log("bot %d shot obtacle %d at (%d,%d)" % (bot.id, target.id, target.x, target.y))
               # TODO: notify bots in range about the shot
             else:
-              print("bot %d fired a shot but hit nothin'" % (bot.id,))
+              log("bot %d fired a shot but hit nothin'" % (bot.id,))
               # TODO: notify bots in range about the shot
 
       # Remove dead bots.
       for bot in bots:
         if not bot.is_alive():
-          print("bot %d has died" % (bots[0].id,))
+          log("bot %d has died" % (bots[0].id,))
           bot.program.cmd_quit()
           deaths.append((bot, t))
       bots = [bot for bot in bots if bot.is_alive()]
 
       # If only one bot remains it is the winner.
       if len(bots) == 1:
-        print("bot %d has won" % (bots[0].id,))
+        log("bot %d has won" % (bots[0].id,))
         break
 
       # If zero bots remain more than one was killed last round, it's a draw.
       elif len(bots) == 0:
-        print("it's a draw, bots died at same time.")
+        log("it's a draw, bots died at same time.")
         break
 
     # If more than one bot remains after end (t), it's a draw.
     if len(bots) > 1:
-      print("it's a draw, bots survived.")
+      log("it's a draw, bots survived.")
       break
 
     for bot in bots: bot.program.cmd_quit()

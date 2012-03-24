@@ -3,6 +3,7 @@
 import os
 import threading
 import subprocess
+from Log import log
 from time import sleep
 
 SLEEP_TIME = 0.01
@@ -18,7 +19,7 @@ class BotProgramException(Exception):
     self.message = message
 
   def print_cmd_error(self, cmd):
-    print('Error: ' + self.message)
+    log('Error: ' + self.message)
 
 class BotProgram(threading.Thread):
 
@@ -64,21 +65,21 @@ class BotProgram(threading.Thread):
       except:
         self.error = self.program.stderr.readline().strip()
       sleep(0.5)
-    #print "bot exit"
+    log("bot exit")
 
-  def write_cmd(self, c):
+  def write_cmd(self, c, printcmd = False):
     try:
       r = self.send(c)
-      #print(c)
+      if printcmd: log(c)
       return r == 'ok'
     except BotProgramException as e:
       e.print_cmd_error(c)
       return False
 
-  def read_cmd(self, c, dflt):
+  def read_cmd(self, c, dflt, printcmd = True):
     try:
       r = self.send(c)
-      #print(c + ': ' + str(r))
+      if printcmd: log(c + ': ' + str(r))
       return r
     except BotProgramException as e:
       e.print_cmd_error(c)
@@ -125,7 +126,8 @@ class BotProgram(threading.Thread):
   def cmd_enemy(self, e, inrange):
     return self.write_cmd(
       'enemy %d %d %d %f %f %f %d' %
-      (e.id, e.x, e.y, e.energy, e.condition, e.speed, 1 if inrange else 0)
+      (e.id, e.x, e.y, e.energy, e.condition, e.speed, 1 if inrange else 0),
+      printcmd = True
     )
 
   def cmd_enemy_weapon(self, e, w):
@@ -136,8 +138,9 @@ class BotProgram(threading.Thread):
 
   def cmd_bot(self, b):
     return self.write_cmd(
-      'bot %d %d %f %f %f' %
-      (b.x, b.y, b.energy, b.condition, b.speed)
+      'bot %d %d %f %f %f %d' %
+      (b.x, b.y, b.energy, b.condition, b.speed, b.id),
+      printcmd = True
     )
 
   def cmd_state_change(self):
