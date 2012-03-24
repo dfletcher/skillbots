@@ -64,12 +64,12 @@ class BotProgram(threading.Thread):
       except:
         self.error = self.program.stderr.readline().strip()
       sleep(0.5)
-    print "bot exit"
+    #print "bot exit"
 
   def write_cmd(self, c):
     try:
       r = self.send(c)
-      print(c)
+      #print(c)
       return r == 'ok'
     except BotProgramException as e:
       e.print_cmd_error(c)
@@ -78,7 +78,7 @@ class BotProgram(threading.Thread):
   def read_cmd(self, c, dflt):
     try:
       r = self.send(c)
-      print(c + ': ' + str(r))
+      #print(c + ': ' + str(r))
       return r
     except BotProgramException as e:
       e.print_cmd_error(c)

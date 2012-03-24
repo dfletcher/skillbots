@@ -121,6 +121,8 @@ db=MySQLdb.connect(user="root", db="damnart_com")
 
 if __name__ == '__main__':
 
+  random.seed()
+
   c = db.cursor()
 
   while True:
@@ -163,7 +165,7 @@ if __name__ == '__main__':
 
     # init obstacles
     obstacles = []
-    numobstacles = int(math.sqrt(arenawidth * arenaheight) / 2)
+    numobstacles = int(math.sqrt(arenawidth * arenaheight) / 3)
     numobstacles += random.randint(-5, 5)
     for i in range(numobstacles):
       r = random.randint(1, 4)
@@ -202,6 +204,22 @@ if __name__ == '__main__':
 
     # Run the arena.
     for t in range(arenaduration):
+
+      # Print the arena.
+      print 'time: ' + str(t)
+      print '-' * (arenawidth+2)
+      for y in range(0, arenaheight):
+        line = ''
+        for x in range(0, arenawidth):
+          c = ' '
+          for obstacle in obstacles:
+            if obstacle.occupies(x, y): c = '*'
+          for bot in bots:
+            if bot.x == x and bot.y == y: c = str(bot.id)
+          line += c
+        print '|' + line + '|'
+      print '-' * (arenawidth+2)
+      print
 
       # Update everybody's state.
       for bot in bots:
