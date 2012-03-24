@@ -8,6 +8,34 @@ import traceback
 import BotProgram
 from time import sleep
 
+# from http://snipplr.com/view.php?codeview&id=22482
+def bresenham_line((x,y),(x2,y2)):
+  """Brensenham line algorithm"""
+  steep = 0
+  coords = []
+  dx = abs(x2 - x)
+  if (x2 - x) > 0: sx = 1
+  else: sx = -1
+  dy = abs(y2 - y)
+  if (y2 - y) > 0: sy = 1
+  else: sy = -1
+  if dy > dx:
+    steep = 1
+    x,y = y,x
+    dx,dy = dy,dx
+    sx,sy = sy,sx
+  d = (2 * dy) - dx
+  for i in range(0,dx):
+    if steep: coords.append((y,x))
+    else: coords.append((x,y))
+    while d >= 0:
+      y = y + sy
+      d = d - (2 * dx)
+    x = x + sx
+    d = d + (2 * dy)
+  coords.append((x2,y2))
+  return coords
+
 class Weapon(object):
 
   def __init__(self, bot):
@@ -16,8 +44,24 @@ class Weapon(object):
     self.id = 1
     self.bot = bot
 
-  def fire(self):
-    pass
+  def _firetestcoords(self, arenawidth, arenaheight):
+    # TODO: randomize aim a bit, have weapons with better accuracy
+    a = self.aim
+    x = self.bot.x
+    y = self.bot.y
+    l = math.max(arenawidth, arenaheight) * 2
+    x2 = x + l * cos(a)
+    y2 = y + l * sin(a)
+    return (bresenham_line((x, y), (x2, y2)), x2, y2, l)
+
+  def fire(self, obstacles, arenawidth, arenaheight):
+    coords, x2, y2, l = _firetestcoords(arenawidth, arenaheight)
+    for coord in coords:
+      for obstacle in obstacles:
+        if obstacle.occupies(coord[0], coord[1]): return ('obstacle', obstacle, coord[0], coord[1])
+      for enemy in bot.enemies:
+        if enemy.x == coord[0] and enemy.y == coord[1]: return ('enemy', enemy, coord[0], coord[1])
+    return ('none', None, x2, y2)
 
 class Bot(object):
 
@@ -205,7 +249,7 @@ if __name__ == '__main__':
       for bot in bots:
         if bot.state in ('attack', 'attack+move'):
           for weapon in bot.weapons:
-            targettype, target, endx, endy = weapon.fire()
+            targettype, target, endx, endy = weapon.fire(obstacles, arenawidth, arenaheight)
             if targettype == 'enemy':
               # TODO: calculate damage here
               if target.state == 'defend': pass
