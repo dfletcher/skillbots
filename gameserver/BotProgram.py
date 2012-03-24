@@ -6,7 +6,7 @@ import subprocess
 from Log import log
 from time import sleep
 
-SLEEP_TIME = 0.01
+SLEEP_TIME = 0.003
 MAX_EXECUTION_TIME = 3.00
 languages = {
   'javascript': './jsbot'

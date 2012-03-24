@@ -56,7 +56,7 @@ class Weapon(object):
     return (bresenham_line((x, y), (x2, y2)), x2, y2, l)
 
   def fire(self, obstacles, arenawidth, arenaheight):
-    coords, x2, y2, l = _firetestcoords(arenawidth, arenaheight)
+    coords, x2, y2, l = self._firetestcoords(arenawidth, arenaheight)
     for coord in coords:
       for obstacle in obstacles:
         if obstacle.occupies(coord[0], coord[1]): return ('obstacle', obstacle, coord[0], coord[1])
@@ -166,8 +166,8 @@ if __name__ == '__main__':
 
     # init obstacles
     obstacles = []
-    numobstacles = int(math.sqrt(arenawidth * arenaheight) / 4)
-    numobstacles += random.randint(-5, 5)
+    numobstacles = int(math.sqrt(arenawidth * arenaheight) / 3)
+    numobstacles += random.randint(-3, 3)
     for i in range(numobstacles):
       r = random.randint(1, 4)
       x = random.randint(0, arenawidth)
@@ -212,12 +212,12 @@ if __name__ == '__main__':
       for y in range(0, arenaheight):
         line = ''
         for x in range(0, arenawidth):
-          c = ' '
+          v = ' '
           for obstacle in obstacles:
-            if obstacle.occupies(x, y): c = '*'
+            if obstacle.occupies(x, y): v = '*'
           for bot in bots:
-            if bot.x == x and bot.y == y: c = str(bot.id)
-          line += c
+            if bot.x == x and bot.y == y: v = str(bot.id)
+          line += v
         log('|' + line + '|')
       log('-' * (arenawidth+2))
       log()
