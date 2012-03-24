@@ -66,7 +66,7 @@ class Weapon(object):
 class Bot(object):
 
   def __init__(self, dbbot):
-    self.bid = dbbot[0]
+    self.id = dbbot[0]
     self.uid = dbbot[1]
     self.nid = dbbot[2]
     self.ispublic = dbbot[3]
@@ -85,11 +85,17 @@ class Bot(object):
     self.state = 'move'
     self.weapons = [ Weapon(self) ]
 
-  def inrange(self, other):
+  def in_range(self, other):
     """ Test if an enemy is in scanning range of this bot. """
     # TODO: this could be better optimized.
-    d = sqrt( math.pow(self.x - other.x, 2) + math.pow(self.y - other.y, 2) )
+    d = math.sqrt( math.pow(self.x - other.x, 2) + math.pow(self.y - other.y, 2) )
     return d <= self.scanning_range
+
+  def damage(self, amount):
+    self.condition -= amount
+
+  def is_alive(self):
+    return self.condition > 0.0
 
 class Obstacle(object):
 
@@ -99,16 +105,16 @@ class Obstacle(object):
     self.r = r
     self.id = id
 
-  def inrange(self, bot):
+  def in_range(self, bot):
     """ Test if this obstacle is in scanning range of a bot. """
     # TODO: this could be better optimized.
-    d = sqrt( math.pow(self.x - bot.x, 2) + math.pow(self.y - bot.y, 2) )
+    d = math.sqrt( math.pow(self.x - bot.x, 2) + math.pow(self.y - bot.y, 2) )
     return d <= bot.scanning_range
 
   def occupies(self, x, y):
     """ Test if this obstacle occupies grid location x,y. """
     # TODO: this could be better optimized.
-    d = sqrt( math.pow(self.x - x, 2) + math.pow(self.y - y, 2) )
+    d = math.sqrt( math.pow(self.x - x, 2) + math.pow(self.y - y, 2) )
     return d <= self.r
 
 db=MySQLdb.connect(user="root", db="damnart_com")
@@ -142,6 +148,7 @@ if __name__ == '__main__':
 
     # build bot objects
     bots = []
+    deaths = []
     for dbbot in dbbots:
       bots.append(Bot(dbbot))
 
@@ -151,8 +158,8 @@ if __name__ == '__main__':
     arenaheight = len(bots) * 6 + random.randint(2, 20)
     for bot in bots:
       bot.program.cmd_init(arenawidth, arenaheight, arenaduration)
-      for weapon in bots.weapons: bot.program.cmd_weapon(weapon)
-    print('TODO: create db arena ' + str(arenawidth) + ' ' + str(arenaheight) + str(arenaduration))
+      for weapon in bot.weapons: bot.program.cmd_weapon(weapon)
+    # TODO: create db arena
 
     # init obstacles
     obstacles = []
@@ -165,20 +172,33 @@ if __name__ == '__main__':
       obstacle = Obstacle(i, x, y, r)
       for bot in bots: bot.program.cmd_obstacle(obstacle)
       obstacles.append(obstacle)
-      print('TODO: create db obstacle ' + str(obstacle))
-
-    # bot starting locations
-    print('TODO: add bots to arena ' + str(bots))
+      # TODO: create db obstacle
 
     # init enemies
     for bot in bots:
       bot.enemies = []
       for enemy in bots:
-        if bot.bid != enemy.bid:
+        if bot.id != enemy.id:
           bot.enemies.append(enemy)
-          bot.program.cmd_enemy(enemy)
-          for weapon in enemy.weapon:
+          bot.program.cmd_enemy(enemy, bot.in_range(enemy))
+          for weapon in enemy.weapons:
             bot.program.cmd_enemy_weapon(enemy, weapon)
+
+    # bot starting locations
+    for bot in bots:
+      good = False
+      while not good:
+        bot.x = random.randint(0, arenawidth)
+        bot.y = random.randint(0, arenaheight)
+        good = True
+        for obstacle in obstacles:
+          if obstacle.occupies(bot.x, bot.y):
+            good = False
+            break
+        for enemy in bot.enemies:
+          if enemy.x == bot.x and enemy.y == bot.y:
+            good = False
+            break
 
     # Run the arena.
     for t in range(arenaduration):
@@ -192,11 +212,11 @@ if __name__ == '__main__':
 
         # Tell remote if obstacles are in range.
         for obstacle in obstacles:
-          bot.program.cmd_obstacle_in_range(obstacle, obstacle.inrange(bot))
+          bot.program.cmd_obstacle_in_range(obstacle, obstacle.in_range(bot))
 
         # Update remote enemy.
         for enemy in bot.enemies:
-          bot.program.cmd_enemy(enemy, enemy.inrange(bot))
+          bot.program.cmd_enemy(enemy, bot.in_range(enemy))
 
         # Invoke stateChange().
         bot.state = bot.program.cmd_state_change()
@@ -231,13 +251,16 @@ if __name__ == '__main__':
           # Check for collisions with obstacles.
           for obstacle in obstacles:
             if obstacle.occupies(nx, ny):
-              # TODO: collision with obstacle, damage
+              bot.damage(0.1)
+              collision = True
               break
 
           # Check for collisions with enemies.
           for enemy in bot.enemies:
             if nx == enemy.x and ny == enemy.y:
-              # TODO: collision with enemy, damage
+              enemy.damage(0.1)
+              bot.damage(0.1)
+              collision = True
               break
 
           # Move to new location if bot didn't smash into something.
@@ -251,14 +274,42 @@ if __name__ == '__main__':
           for weapon in bot.weapons:
             targettype, target, endx, endy = weapon.fire(obstacles, arenawidth, arenaheight)
             if targettype == 'enemy':
-              # TODO: calculate damage here
-              if target.state == 'defend': pass
-              elif target.state == 'defend+move': pass
-              else: pass
-            elif targettype == 'obstacle':
-              pass
+              damage = 0.3
+              if target.state == 'defend': damage = 0.1
+              if target.state == 'defend+move': damage = 0.2
+              print("bot %d shot bot %d at (%d,%d) for damage %f" % (bot.id, target.id, target.x, target.y, damage))
+              target.damage(damage)
+              # TODO: notify target that it was hit
+              # TODO: notify bot that it made a hit
+              # TODO: notify other bots in range about the hit
+            elif targettype == 'enemy':
+              print("bot %d shot obtacle %d at (%d,%d)" % (bot.id, target.id, target.x, target.y))
+              # TODO: notify bots in range about the shot
             else:
-              pass
-            # TODO: notify bot and enemies in range about shot
+              print("bot %d fired a shot but hit nothin'" % (bot.id,))
+              # TODO: notify bots in range about the shot
+
+      # Remove dead bots.
+      for bot in bots:
+        if not bot.is_alive():
+          print("bot %d has died" % (bots[0].id,))
+          bot.program.cmd_quit()
+          deaths.append((bot, t))
+      bots = [bot for bot in bots if bot.is_alive()]
+
+      # If only one bot remains it is the winner.
+      if len(bots) == 1:
+        print("bot %d has won" % (bots[0].id,))
+        break
+
+      # If zero bots remain more than one was killed last round, it's a draw.
+      elif len(bots) == 0:
+        print("it's a draw, bots died at same time.")
+        break
+
+    # If more than one bot remains after end (t), it's a draw.
+    if len(bots) > 1:
+      print("it's a draw, bots survived.")
+      break
 
     for bot in bots: bot.program.cmd_quit()

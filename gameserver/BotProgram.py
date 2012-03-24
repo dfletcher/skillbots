@@ -5,12 +5,11 @@ import threading
 import subprocess
 from time import sleep
 
-SLEEP_TIME = 0.1
+SLEEP_TIME = 0.01
 MAX_EXECUTION_TIME = 3.00
 languages = {
   'javascript': './jsbot'
 }
-
 
 class BotProgramException(Exception):
 
@@ -19,8 +18,7 @@ class BotProgramException(Exception):
     self.message = message
 
   def print_cmd_error(self, cmd):
-    print('Error: ' + self.message + ' on command ' + cmd)
-
+    print('Error: ' + self.message)
 
 class BotProgram(threading.Thread):
 
@@ -94,9 +92,9 @@ class BotProgram(threading.Thread):
       e.print_cmd_error(cmd)
       return False
 
-  def cmd_init(self, w, h):
+  def cmd_init(self, w, h, d):
     return self.write_cmd(
-      'init %d %d' %
+      'init %d %d %d' %
       (w, h, d)
     )
 

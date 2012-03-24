@@ -382,6 +382,7 @@ int main(int argc, char* argv[]) {
     else if (obstacle_inrange_cmd.compare(linevec[0]) == 0) {
       int id = str2int(linevec[1]);
       obstacles[id].inrange = (str2int(linevec[2]) == 0) ? true : false;
+      std::cout << "ok" << std::endl;
     }
     else if (weapon_cmd.compare(linevec[0]) == 0) {
       int id = str2int(linevec[1]);
