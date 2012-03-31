@@ -251,12 +251,19 @@ function skillbots_schema() {
         'not null' => TRUE,
         'default' => 0,
       ),
-      'command' => array(
-        'description' => 'Command enumeration.',
+      't' => array(
+        'description' => 'Event time.',
         'type' => 'int',
-        'unsigned' => TRUE,
+        'unsigned' => FALSE,
         'not null' => TRUE,
         'default' => 0,
+      ),
+      'command' => array(
+        'description' => 'Command type.',
+        'type' => 'varchar',
+        'length' => 256,
+        'not null' => TRUE,
+        'default' => 'nop',
       ),
       'arguments' => array(
         'description' => 'JSON encoded command arguments. May be NULL if the command does not take args.',

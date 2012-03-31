@@ -2,6 +2,7 @@
 
 import os
 import math
+import json
 import random
 import MySQLdb
 import traceback
@@ -176,7 +177,12 @@ if __name__ == '__main__':
       obstacle = Obstacle(i, x, y, r)
       for bot in bots: bot.program.cmd_obstacle(obstacle)
       obstacles.append(obstacle)
-      # TODO: create db obstacle
+      c.execute("""
+        INSERT INTO skb_arena_stream
+        SET command='obstacle', aid=%d, t=%d, arguments='%s'
+      """ % (arena[0], -1, json.dumps({
+        'id': i, 'x': x, 'y': y, 'r': r
+      }))
 
     # init enemies
     for bot in bots:
@@ -200,6 +206,12 @@ if __name__ == '__main__':
           if enemy.x == bot.x and enemy.y == bot.y:
             good = False
             break
+      c.execute("""
+        INSERT INTO skb_arena_stream
+        SET command='bot', aid=%d, t=%d, arguments='%s'
+      """ % (arena[0], -1, json.dumps({
+        'id': bot.id, 'x': bot.x, 'y': bot.y
+      }))
 
     # Run the arena.
     for t in range(arenaduration):
@@ -341,6 +353,12 @@ if __name__ == '__main__':
     # If more than one bot remains after end (t), it's a draw.
     if len(bots) > 1:
       log("it's a draw, bots survived.")
-      break
 
     for bot in bots: bot.program.cmd_quit()
+
+    c.execute("""
+      UPDATE skb_arena
+      SET run=1
+      WHERE aid=%d
+    """ % arena[0])
+
