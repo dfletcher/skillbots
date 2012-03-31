@@ -50,19 +50,20 @@ class Weapon(object):
     a = self.aim
     x = self.bot.x
     y = self.bot.y
-    l = math.max(arenawidth, arenaheight) * 2
-    x2 = x + l * cos(a)
-    y2 = y + l * sin(a)
+    l = max(arenawidth, arenaheight) * 2
+    x2 = int(round(x + l * math.cos(a)))
+    y2 = int(round(y + l * math.sin(a)))
+    log('fire: (' + str(self.aim) + '): ' + str(x) + ',' + str(y) + ' => ' + str(x2) + ',' + str(y2))
     return (bresenham_line((x, y), (x2, y2)), x2, y2, l)
 
   def fire(self, obstacles, arenawidth, arenaheight):
     coords, x2, y2, l = self._firetestcoords(arenawidth, arenaheight)
     for coord in coords:
       for obstacle in obstacles:
-        if obstacle.occupies(coord[0], coord[1]): return ('obstacle', obstacle, coord[0], coord[1])
+        if obstacle.occupies(coord[0], coord[1]): return ('obstacle', obstacle, coord[0], coord[1], coords)
       for enemy in bot.enemies:
-        if enemy.x == coord[0] and enemy.y == coord[1]: return ('enemy', enemy, coord[0], coord[1])
-    return ('none', None, x2, y2)
+        if enemy.x == coord[0] and enemy.y == coord[1]: return ('enemy', enemy, coord[0], coord[1], coords)
+    return ('none', None, x2, y2, coords)
 
 class Bot(object):
 
@@ -183,9 +184,6 @@ if __name__ == '__main__':
       for enemy in bots:
         if bot.id != enemy.id:
           bot.enemies.append(enemy)
-          bot.program.cmd_enemy(enemy, bot.in_range(enemy))
-          for weapon in enemy.weapons:
-            bot.program.cmd_enemy_weapon(enemy, weapon)
 
     # bot starting locations
     for bot in bots:
@@ -206,22 +204,6 @@ if __name__ == '__main__':
     # Run the arena.
     for t in range(arenaduration):
 
-      # Print the arena.
-      log('time: ' + str(t))
-      log('-' * (arenawidth+2))
-      for y in range(0, arenaheight):
-        line = ''
-        for x in range(0, arenawidth):
-          v = ' '
-          for obstacle in obstacles:
-            if obstacle.occupies(x, y): v = '*'
-          for bot in bots:
-            if bot.x == x and bot.y == y: v = str(bot.id)
-          line += v
-        log('|' + line + '|')
-      log('-' * (arenawidth+2))
-      log()
-
       # Update everybody's state.
       for bot in bots:
 
@@ -236,6 +218,8 @@ if __name__ == '__main__':
         # Update remote enemy.
         for enemy in bot.enemies:
           bot.program.cmd_enemy(enemy, bot.in_range(enemy))
+          for weapon in enemy.weapons:
+            bot.program.cmd_enemy_weapon(enemy, weapon)
 
         # Invoke stateChange().
         bot.state = bot.program.cmd_state_change()
@@ -252,15 +236,16 @@ if __name__ == '__main__':
 
           # Change bot direction.
           bot.dir, bot.speed = bot.program.cmd_move()
-          if bot.dir == 'n': d = (0.0, 0.0-bot.speed)
-          elif bot.dir == 'ne': d = (bot.speed, 0.0-bot.speed)
-          elif bot.dir == 'e': d = (bot.speed, 0.0)
+          if bot.dir == 'n': d = (0, 0-bot.speed)
+          elif bot.dir == 'ne': d = (bot.speed, 0-bot.speed)
+          elif bot.dir == 'e': d = (bot.speed, 0)
           elif bot.dir == 'se': d = (bot.speed, bot.speed)
-          elif bot.dir == 's': d = (0.0, bot.speed)
-          elif bot.dir == 'sw': d = (0.0-bot.speed, bot.speed)
-          elif bot.dir == 'w': d = (0.0-bot.speed, 0.0)
-          elif bot.dir == 'nw': d = (0.0-bot.speed, 0.0-bot.speed)
-          else: d = (0.0, 0.0)
+          elif bot.dir == 's': d = (0, bot.speed)
+          elif bot.dir == 'sw': d = (0-bot.speed, bot.speed)
+          elif bot.dir == 'w': d = (0-bot.speed, 0)
+          elif bot.dir == 'nw': d = (0-bot.speed, 0-bot.speed)
+          else: d = (0, 0)
+          d = ( int(math.floor(d[0])), int(math.floor(d[1])) )
 
           # find desired new location.
           nx = (bot.x + d[0]) % arenawidth
@@ -288,10 +273,12 @@ if __name__ == '__main__':
             bot.y = ny
 
       # Resolve combat.
+      shots = []
       for bot in bots:
         if bot.state in ('attack', 'attack+move'):
           for weapon in bot.weapons:
-            targettype, target, endx, endy = weapon.fire(obstacles, arenawidth, arenaheight)
+            targettype, target, endx, endy, coords = weapon.fire(obstacles, arenawidth, arenaheight)
+            shots.append(coords)
             if targettype == 'enemy':
               damage = 0.3
               if target.state == 'defend': damage = 0.1
@@ -302,7 +289,10 @@ if __name__ == '__main__':
               # TODO: notify bot that it made a hit
               # TODO: notify other bots in range about the hit
             elif targettype == 'enemy':
-              log("bot %d shot obtacle %d at (%d,%d)" % (bot.id, target.id, target.x, target.y))
+              log("bot %d shot enemy %d at (%d,%d)" % (bot.id, target.id, target.x, target.y))
+              # TODO: notify bots in range about the shot
+            elif targettype == 'obstacle':
+              log("bot %d shot obstacle %d at (%d,%d)" % (bot.id, target.id, target.x, target.y))
               # TODO: notify bots in range about the shot
             else:
               log("bot %d fired a shot but hit nothin'" % (bot.id,))
@@ -311,7 +301,7 @@ if __name__ == '__main__':
       # Remove dead bots.
       for bot in bots:
         if not bot.is_alive():
-          log("bot %d has died" % (bots[0].id,))
+          log("bot %d has died" % (bot.id,))
           bot.program.cmd_quit()
           deaths.append((bot, t))
       bots = [bot for bot in bots if bot.is_alive()]
@@ -325,6 +315,28 @@ if __name__ == '__main__':
       elif len(bots) == 0:
         log("it's a draw, bots died at same time.")
         break
+
+      # Print the arena.
+      def _inshot(x,y):
+        for coords in shots:
+          for coord in coords:
+            if coord[0] == x and coord[1] == y: return True
+        return False
+      log('time: ' + str(t))
+      log('-' * (arenawidth+2))
+      for y in range(0, arenaheight):
+        line = ''
+        for x in range(0, arenawidth):
+          if _inshot(x,y): v = '?'
+          else: v = ' '
+          for obstacle in obstacles:
+            if obstacle.occupies(x, y): v = '*'
+          for bot in bots:
+            if bot.x == x and bot.y == y: v = str(bot.id)
+          line += v
+        log('|' + line + '|')
+      log('-' * (arenawidth+2))
+      log()
 
     # If more than one bot remains after end (t), it's a draw.
     if len(bots) > 1:

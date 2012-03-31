@@ -421,6 +421,7 @@ int main(int argc, char* argv[]) {
     else {
       std::cerr << "Unknown command: " << linevec[0] << std::endl;
     }
+    std::cout.flush();
   }
 
   // Dispose the persistent context.

@@ -6,7 +6,7 @@ import subprocess
 from Log import log
 from time import sleep
 
-SLEEP_TIME = 0.003
+SLEEP_TIME = 0.01
 MAX_EXECUTION_TIME = 3.00
 languages = {
   'javascript': './jsbot'
@@ -19,22 +19,25 @@ class BotProgramException(Exception):
     self.message = message
 
   def print_cmd_error(self, cmd):
-    log('Error: ' + self.message)
+    log('Error: ' + self.message + ' in command: ' + cmd)
 
 class BotProgram(threading.Thread):
 
-  def __init__(self, program, botpath):
-    threading.Thread.__init__(self)
+  def __init__(self, command, botpath):
     self.input = None
     self.error = None
+    self.program = None
+    self.command = command
+    self.botpath = botpath
     self.program = subprocess.Popen(
-      [program, botpath],
+      [self.command, self.botpath],
       bufsize=256,
       close_fds=True,
       stdin=subprocess.PIPE,
       stdout=subprocess.PIPE,
       stderr=subprocess.PIPE
     )
+    threading.Thread.__init__(self)
 
   def send(self, command):
     if self.program.poll() != None:
@@ -43,7 +46,7 @@ class BotProgram(threading.Thread):
     self.program.stdin.write(command + "\n")
     self.program.stdin.flush()
     if command == 'quit':
-      self.program.kill()
+      self.__kill()
       return 'ok'
     else:
       timeout = 0.0
@@ -54,9 +57,14 @@ class BotProgram(threading.Thread):
           raise BotProgramException(self.error)
         elif timeout > MAX_EXECUTION_TIME:
           self.program.kill()
+          self.__kill()
           raise BotProgramException("Timeout waiting for command: " + command)
         sleep(SLEEP_TIME)
         timeout += SLEEP_TIME
+
+  def __kill(self):
+    try: self.program.kill()
+    except (OSError): pass
 
   def run(self):
     while self.program.poll() == None:
@@ -64,7 +72,6 @@ class BotProgram(threading.Thread):
         self.input = self.program.stdout.readline().strip()
       except:
         self.error = self.program.stderr.readline().strip()
-      sleep(0.5)
     log("bot exit")
 
   def write_cmd(self, c, printcmd = False):
