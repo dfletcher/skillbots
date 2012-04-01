@@ -1,7 +1,10 @@
 
-
 all:
-	g++ -o ./jsbot ./JavaScriptBot.cpp -lv8
+	make -C botrunner all
+
+clean:
+	make -C botrunner clean
+	make -C daemon clean
 
 run: all
-	python main.py
+	make -C daemon run
