@@ -45,6 +45,16 @@ function skillbots_arena_json($_aid, $p) {
     $output .= 'parseArenaData(';
   }
   $data = array();
+  $r = db_select('skb_arena_stream', 's')
+    ->fields('s', array('t', 'command', 'arguments'))
+    ->condition('s.aid', $aid)
+    ->orderBy('s.t')
+    ->execute();
+  while ($a = $r->fetchAssoc()) {
+    $a += drupal_json_decode($a['arguments']);
+    unset($a['arguments']);
+    $data[] = $a;
+  }
   $output .= drupal_json_encode($data);
   if ($p == 'p') {
     $output .= ');';

@@ -40,10 +40,17 @@ def bresenham_line((x,y),(x2,y2)):
 
 class Weapon(object):
 
+  __idgen = 1
+  def __id(self):
+    rval = Weapon.__idgen
+    Weapon.__idgen += 1
+    return rval
+
   def __init__(self, bot):
+    global __idgen
     self.aim = 0.0
     self.power = 1.0
-    self.id = 1
+    self.id = self.__id()
     self.bot = bot
 
   def _firetestcoords(self, arenawidth, arenaheight):
@@ -151,6 +158,13 @@ if __name__ == '__main__':
     """ % arena[0])
     dbbots = c.fetchall()
 
+    # internal utility for adding events to the arena event stream
+    def streamadd(t, cmd, args):
+      c.execute("""
+        INSERT INTO skb_arena_stream
+        SET command='%s', aid=%d, t=%d, arguments='%s'
+      """ % (cmd, arena[0], t, json.dumps(args)))
+
     # build bot objects
     bots = []
     deaths = []
@@ -161,10 +175,7 @@ if __name__ == '__main__':
     arenaduration = 1000
     arenawidth = len(bots) * 6 + random.randint(2, 20)
     arenaheight = len(bots) * 6 + random.randint(2, 20)
-    for bot in bots:
-      bot.program.cmd_init(arenawidth, arenaheight, arenaduration)
-      for weapon in bot.weapons: bot.program.cmd_weapon(weapon)
-    # TODO: create db arena
+    streamadd(-1, 'init', { 'arena': arena[0], 'w': arenawidth, 'h': arenaheight, 'max_duration': arenaduration })
 
     # init obstacles
     obstacles = []
@@ -177,12 +188,15 @@ if __name__ == '__main__':
       obstacle = Obstacle(i, x, y, r)
       for bot in bots: bot.program.cmd_obstacle(obstacle)
       obstacles.append(obstacle)
-      c.execute("""
-        INSERT INTO skb_arena_stream
-        SET command='obstacle', aid=%d, t=%d, arguments='%s'
-      """ % (arena[0], -1, json.dumps({
-        'id': i, 'x': x, 'y': y, 'r': r
-      }))
+    for obstacle in obstacles:
+      streamadd(-1, 'obstacle', { 'id': obstacle.id, 'x': obstacle.x, 'y': obstacle.y, 'r': obstacle.r })
+
+    # init bots and weapons
+    for bot in bots:
+      bot.program.cmd_init(arenawidth, arenaheight, arenaduration)
+      for weapon in bot.weapons:
+        bot.program.cmd_weapon(weapon)
+        streamadd(-1, 'weapon', { 'bot': bot.id, 'id': weapon.id, 'power': weapon.power, 'aim': weapon.aim })
 
     # init enemies
     for bot in bots:
@@ -206,12 +220,21 @@ if __name__ == '__main__':
           if enemy.x == bot.x and enemy.y == bot.y:
             good = False
             break
-      c.execute("""
-        INSERT INTO skb_arena_stream
-        SET command='bot', aid=%d, t=%d, arguments='%s'
-      """ % (arena[0], -1, json.dumps({
-        'id': bot.id, 'x': bot.x, 'y': bot.y
-      }))
+      streamadd(-1, 'bot', {
+        'id': bot.id,
+        'user': bot.uid,
+        'training': 1 if bot.training else 0,
+        'language': bot.language,
+        'x': bot.x,
+        'y': bot.y,
+        'max_energy': bot.max_energy,
+        'energy': bot.energy,
+        'condition': bot.condition,
+        'speed': bot.speed,
+        'scanning_range': bot.scanning_range,
+        'dir': bot.dir,
+        'state': bot.state
+      })
 
     # Run the arena.
     for t in range(arenaduration):
@@ -235,12 +258,23 @@ if __name__ == '__main__':
 
         # Invoke stateChange().
         bot.state = bot.program.cmd_state_change()
+        streamadd(t, 'bot', {
+          'id': bot.id,
+          'x': bot.x,
+          'y': bot.y,
+          'energy': bot.energy,
+          'condition': bot.condition,
+          'speed': bot.speed,
+          'dir': bot.dir,
+          'state': bot.state
+        })
 
       # Everybody who's firing, aim.
       for bot in bots:
         if bot.state in ('attack', 'attack+move'):
           for weapon in bot.weapons:
             weapon.aim = bot.program.cmd_aim(weapon)
+            streamadd(t, 'aim', { 'bot': bot.id, 'weapon': weapon.id, 'aim': weapon.aim })
 
       # Everybody who's moving, move.
       for bot in bots:
@@ -283,6 +317,7 @@ if __name__ == '__main__':
           if not collision:
             bot.x = nx
             bot.y = ny
+            streamadd(t, 'move', { 'bot': bot.id, 'x': bot.x, 'y': bot.y })
 
       # Resolve combat.
       shots = []
@@ -295,24 +330,43 @@ if __name__ == '__main__':
               damage = 0.3
               if target.state == 'defend': damage = 0.1
               if target.state == 'defend+move': damage = 0.2
-              log("bot %d shot bot %d at (%d,%d) for damage %f" % (bot.id, target.id, target.x, target.y, damage))
               target.damage(damage)
+              streamadd(t, 'fire', {
+                'bot': bot.id,
+                'target_type': targettype,
+                'enemy': target.id,
+                'x': target.x,
+                'y': target.y,
+                'damage': damage
+              })
+              log("bot %d shot bot %d at (%d,%d) for damage %f" % (bot.id, target.id, target.x, target.y, damage))
               # TODO: notify target that it was hit
               # TODO: notify bot that it made a hit
               # TODO: notify other bots in range about the hit
-            elif targettype == 'enemy':
-              log("bot %d shot enemy %d at (%d,%d)" % (bot.id, target.id, target.x, target.y))
-              # TODO: notify bots in range about the shot
-            elif targettype == 'obstacle':
-              log("bot %d shot obstacle %d at (%d,%d)" % (bot.id, target.id, target.x, target.y))
+            if targettype == 'obstacle':
+              streamadd(t, 'fire', {
+                'bot': bot.id,
+                'target_type': targettype,
+                'obstacle': target.id,
+                'x': target.x,
+                'y': target.y
+              })
+              log("bot %d shot %s %d at (%d,%d)" % (bot.id, targettype, target.id, target.x, target.y))
               # TODO: notify bots in range about the shot
             else:
+              streamadd(t, 'fire', {
+                'bot': bot.id,
+                'target_type': targettype,
+                'x': endx,
+                'y': endy
+              })
               log("bot %d fired a shot but hit nothin'" % (bot.id,))
               # TODO: notify bots in range about the shot
 
       # Remove dead bots.
       for bot in bots:
         if not bot.is_alive():
+          streamadd(t, 'death', { 'bot': bot.id })
           log("bot %d has died" % (bot.id,))
           bot.program.cmd_quit()
           deaths.append((bot, t))
@@ -320,11 +374,13 @@ if __name__ == '__main__':
 
       # If only one bot remains it is the winner.
       if len(bots) == 1:
+        streamadd(t, 'winner', { 'bot': bots[0].id })
         log("bot %d has won" % (bots[0].id,))
         break
 
       # If zero bots remain more than one was killed last round, it's a draw.
       elif len(bots) == 0:
+        streamadd(t, 'deathdraw', { })
         log("it's a draw, bots died at same time.")
         break
 
@@ -352,13 +408,16 @@ if __name__ == '__main__':
 
     # If more than one bot remains after end (t), it's a draw.
     if len(bots) > 1:
+      for bot in bots: streamadd(t, 'livedraw', { 'bot': bot.id })
       log("it's a draw, bots survived.")
 
     for bot in bots: bot.program.cmd_quit()
+
+    streamadd(t, 'end', { 'arena': arena[0] })
 
     c.execute("""
       UPDATE skb_arena
       SET run=1
       WHERE aid=%d
     """ % arena[0])
-
+    db.commit()
