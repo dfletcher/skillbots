@@ -53,6 +53,7 @@ function skillbots_arena_json($_aid, $p) {
   while ($a = $r->fetchAssoc()) {
     $a += drupal_json_decode($a['arguments']);
     unset($a['arguments']);
+    $a['t'] = intval($a['t']); // Why doesn't mysql read as int? int in schema.
     $data[] = $a;
   }
   $output .= drupal_json_encode($data);
