@@ -8,7 +8,9 @@ class JavaScript : public BotLanguage {
 
   public:
 
-    JavaScript(void) : context(Context::New()), context_scope(context) { ; }
+    JavaScript(Persistent<Context> c) {
+      context = c;
+    }
 
     void init(const char *path) throw() {
 
@@ -153,8 +155,6 @@ class JavaScript : public BotLanguage {
 
   private:
 
-    HandleScope handle_scope;
-    Context::Scope context_scope;
     Persistent<Context> context;
     Persistent<Object> arenaObject;
     Persistent<Value> stateChangeImpl, aimImpl, moveImpl;
@@ -250,7 +250,11 @@ class JavaScript : public BotLanguage {
 };
 
 int main(int argc, char* argv[]) {
+  HandleScope handle_scope;
+  Persistent<Context> context = Context::New();
+  Context::Scope context_scope(context);
+  JavaScript language(context);
   BotRunner runner;
-  JavaScript language;
   return runner.run(language, argc, argv);
 }
+
