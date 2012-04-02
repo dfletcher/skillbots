@@ -193,7 +193,7 @@ if __name__ == '__main__':
 
     # init bots and weapons
     for bot in bots:
-      bot.program.cmd_init(arenawidth, arenaheight, arenaduration)
+      bot.program.cmd_init(arena[0], arenawidth, arenaheight, arenaduration)
       for weapon in bot.weapons:
         bot.program.cmd_weapon(weapon)
         streamadd(-1, 'weapon', { 'bot': bot.id, 'id': weapon.id, 'power': weapon.power, 'aim': weapon.aim })

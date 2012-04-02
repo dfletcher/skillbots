@@ -100,10 +100,10 @@ class BotProgram(threading.Thread):
       e.print_cmd_error(cmd)
       return False
 
-  def cmd_init(self, w, h, d):
+  def cmd_init(self, id, w, h, d):
     return self.write_cmd(
-      'init %d %d %d' %
-      (w, h, d)
+      'init %d %d %d %d' %
+      (id, w, h, d)
     )
 
   def cmd_time(self, t):
@@ -145,8 +145,8 @@ class BotProgram(threading.Thread):
 
   def cmd_bot(self, b):
     return self.write_cmd(
-      'bot %d %d %f %f %f %d' %
-      (b.x, b.y, b.energy, b.condition, b.speed, b.id),
+      'bot %d %d %d %f %f %f %d' %
+      (b.id, b.x, b.y, b.energy, b.condition, b.speed, b.id),
       printcmd = True
     )
 

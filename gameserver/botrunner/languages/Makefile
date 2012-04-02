@@ -1,6 +1,6 @@
 
 all:
-	g++ ../libbotrunner.a -o ./jsbot ./JavaScript.cpp -lv8
+	g++ -I.. -O3 -o ./javascript ./JavaScript.cpp ../libbotrunner.a -lv8
 
 clean:
-	rm -f jsbot
+	rm -f javascript
