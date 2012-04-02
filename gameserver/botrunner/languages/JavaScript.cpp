@@ -215,35 +215,25 @@ class JavaScript : public BotLanguage {
         arenaObject->Set(String::New("bot"), bot);
       }
       prepareBot(arena.bot, bot);
-      Handle<Object> enemies;
-      Handle<Value> _enemies = arenaObject->Get(String::New("enemies"));
-      if (_enemies->IsObject()) {
-        enemies = _enemies->ToObject();
-      }
-      else {
-        enemies = Local<Object>::New(Object::New());
-        arenaObject->Set(String::New("enemies"), enemies);
-      }
+      Handle<Object> enemies = Local<Object>::New(Object::New());
+      arenaObject->Set(String::New("enemies"), enemies);
       idx = 0;
       for (BotMapIterator i = arena.enemies.begin(); i != arena.enemies.end(); i++) {
-        Local<Object> enemy = Local<Object>::New(Object::New());
-        prepareBot(i->second, enemy);
-        enemies->Set(idx++, enemy);
+        if (i->second.inrange) {
+          Local<Object> enemy = Local<Object>::New(Object::New());
+          prepareBot(i->second, enemy);
+          enemies->Set(idx++, enemy);
+        }
       }
-      Handle<Object> obstacles;
-      Handle<Value> _obstacles = arenaObject->Get(String::New("obstacles"));
-      if (_obstacles->IsObject()) {
-        obstacles = _obstacles->ToObject();
-      }
-      else {
-        obstacles = Local<Object>::New(Object::New());
-        arenaObject->Set(String::New("obstacles"), obstacles);
-      }
+      Handle<Object> obstacles = Local<Object>::New(Object::New());
+      arenaObject->Set(String::New("obstacles"), obstacles);
       idx = 0;
       for (ObstacleMapIterator i = arena.obstacles.begin(); i != arena.obstacles.end(); i++) {
-        Local<Object> obstacle = Local<Object>::New(Object::New());
-        prepareObstacle(i->second, obstacle);
-        obstacles->Set(idx++, obstacle);
+        if (i->second.inrange) {
+          Local<Object> obstacle = Local<Object>::New(Object::New());
+          prepareObstacle(i->second, obstacle);
+          obstacles->Set(idx++, obstacle);
+        }
       }
       return bot;
     }
