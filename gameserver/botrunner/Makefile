@@ -14,4 +14,3 @@ clean:
 libbotrunner.a:	$(LIBOFILES)
 	rm -f $@
 	ar cq $@ $(LIBOFILES)
-

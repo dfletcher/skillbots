@@ -9,7 +9,7 @@ from time import sleep
 SLEEP_TIME = 0.01
 MAX_EXECUTION_TIME = 3.00
 languages = {
-  'javascript': './jsbot'
+  'javascript': '../botrunner/languages/javascript'
 }
 
 class BotProgramException(Exception):
@@ -56,7 +56,6 @@ class BotProgram(threading.Thread):
         elif self.error:
           raise BotProgramException(self.error)
         elif timeout > MAX_EXECUTION_TIME:
-          self.program.kill()
           self.__kill()
           raise BotProgramException("Timeout waiting for command: " + command)
         sleep(SLEEP_TIME)
@@ -72,9 +71,11 @@ class BotProgram(threading.Thread):
         self.input = self.program.stdout.readline().strip()
       except:
         self.error = self.program.stderr.readline().strip()
-    log("bot exit")
+      if not self.input:
+        self.error = self.program.stderr.readline().strip()
+    log("bot exit: " + str(self.error))
 
-  def write_cmd(self, c, printcmd = False):
+  def write_cmd(self, c, printcmd = True):
     try:
       r = self.send(c)
       if printcmd: log(c)

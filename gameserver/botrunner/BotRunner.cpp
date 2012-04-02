@@ -75,13 +75,15 @@ int BotRunner::run(BotLanguage &language, int argc, char* argv[]) {
       try {
         language.init(argv[1]);
       }
-      catch (std::exception *e) {
-        std::cerr << "Exception occurred in language.init(): " << e->what() << '.' << std::endl;
-        return 1;
+      catch (std::exception &e) {
+        std::cerr << "Exception occurred in language.init(): " << e.what() << '.' << std::endl;
+        exitval = 1;
+        break;
       }
       catch (...) {
         std::cerr << "Unknown exception occurred in language.init()." << std::endl;
-        return 2;
+        exitval = 2;
+        break;
       }
       std::cout << "ok" << std::endl;
     }
@@ -92,13 +94,15 @@ int BotRunner::run(BotLanguage &language, int argc, char* argv[]) {
       try {
         language.stateChange(arena, state);
       }
-      catch (std::exception *e) {
-        std::cerr << "Exception occurred in language.init(): " << e->what() << '.' << std::endl;
-        return 3;
+      catch (std::exception &e) {
+        std::cerr << "Exception occurred in language.stateChange(): " << e.what() << '.' << std::endl;
+        exitval = 3;
+        break;
       }
       catch (...) {
-        std::cerr << "Unknown exception occurred in language.init()." << std::endl;
-        return 4;
+        std::cerr << "Unknown exception occurred in language.stateChange()." << std::endl;
+        exitval = 4;
+        break;
       }
       const char *cstate = state.str().c_str();
       if ((state_stop.compare(cstate) != 0) &&
@@ -108,7 +112,8 @@ int BotRunner::run(BotLanguage &language, int argc, char* argv[]) {
         (state_defend.compare(cstate) != 0) &&
         (state_defend_move.compare(cstate) != 0)) {
         std::cerr << "FATAL: broken stateChange() implementation, returned unknown state, should be one of: (stop,move,attack,attack+move,defend,defend+move) but received: " << state << std::endl;
-        return 5;
+        exitval = 5;
+        break;
       }
       std::cout << state << std::endl;
     }
@@ -119,13 +124,15 @@ int BotRunner::run(BotLanguage &language, int argc, char* argv[]) {
       try {
         language.aim(arena, arena.bot.weapons[Utility::str2int(linevec[1])], rval);
       }
-      catch (std::exception *e) {
-        std::cerr << "Exception occurred in language.aim(): " << e->what() << '.' << std::endl;
-        return 6;
+      catch (std::exception &e) {
+        std::cerr << "Exception occurred in language.aim(): " << e.what() << '.' << std::endl;
+        exitval = 6;
+        break;
       }
       catch (...) {
         std::cerr << "Unknown exception occurred in language.aim()." << std::endl;
-        return 7;
+        exitval = 7;
+        break;
       }
       std::cout << rval << std::endl;
     }
@@ -137,13 +144,15 @@ int BotRunner::run(BotLanguage &language, int argc, char* argv[]) {
       try {
         language.move(arena, dir, speed);
       }
-      catch (std::exception *e) {
-        std::cerr << "Exception occurred in language.move(): " << e->what() << '.' << std::endl;
-        return 8;
+      catch (std::exception &e) {
+        std::cerr << "Exception occurred in language.move(): " << e.what() << '.' << std::endl;
+        exitval = 8;
+        break;
       }
       catch (...) {
         std::cerr << "Unknown exception occurred in language.move()." << std::endl;
-        return 9;
+        exitval = 9;
+        break;
       }
       const char *cdir = dir.str().c_str();
       if ((dir_n.compare(cdir) != 0) &&
@@ -155,7 +164,8 @@ int BotRunner::run(BotLanguage &language, int argc, char* argv[]) {
         (dir_w.compare(cdir) != 0) &&
         (dir_nw.compare(cdir) != 0)) {
         std::cerr << "FATAL: broken move() implementation, first element of returned array returned unknown direction should be one of: (n,ne,e,se,s,sw,w,nw) but received: " << dir << std::endl;
-        return 10;
+        exitval = 10;
+        break;
       }
       std::cout << dir << ' ' << speed << std::endl;
     }
@@ -235,11 +245,13 @@ int BotRunner::run(BotLanguage &language, int argc, char* argv[]) {
       std::cerr << "Unknown command: " << linevec[0] << std::endl;
     }
 
-    // flush output
     std::cout.flush();
+    std::cerr.flush();
   }
 
   // exit
+  std::cout.flush();
+  std::cerr.flush();
   return exitval;
 }
 

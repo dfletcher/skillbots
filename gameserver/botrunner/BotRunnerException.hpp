@@ -6,14 +6,17 @@
 #define BOTRUNNER_EXCEPTION
 
 #include <string>
+#include <sstream>
 #include <exception>
 
 class BotRunnerException : public std::exception {
   public:
-    BotRunnerException(const std::string&);
-    BotRunnerException(const char*);
+    BotRunnerException(std::string &msg);
+    BotRunnerException(std::stringstream &msg);
+    BotRunnerException(const char *msg);
     ~BotRunnerException() throw();
     const char* what(void) const throw();
+  private:
     std::string msg;
 };
 

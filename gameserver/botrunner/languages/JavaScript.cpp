@@ -12,8 +12,9 @@ class JavaScript : public BotLanguage {
       context = c;
     }
 
-    void init(const char *path) throw() {
+    void init(const char *path) {
 
+      TryCatch exception;
       HandleScope handle_scope;
 
       // Read source file.
@@ -21,7 +22,7 @@ class JavaScript : public BotLanguage {
       if (!Utility::readfile(path, botcode)) {
         std::stringstream msg;
         msg << "FATAL: could not read source file: " << path << std::endl;
-        throw new BotRunnerException(msg.str());
+        throw BotRunnerException(msg);
       }
       Handle<String> source = String::New(botcode.str().c_str());
 
@@ -33,12 +34,18 @@ class JavaScript : public BotLanguage {
       catch(...) {
         std::stringstream msg;
         msg << "FATAL: exception compiling source file: " << path << std::endl;
-        throw new BotRunnerException(msg.str());
+        throw BotRunnerException(msg);
+      }
+      if (exception.HasCaught()) {
+        std::stringstream msg;
+        String::AsciiValue jsmsg(exception.Message()->Get());
+        msg << "FATAL: exception while invoking init(): " << *jsmsg;
+        throw BotRunnerException(msg);
       }
       if (!*script) {
         std::stringstream msg;
         msg << "FATAL: failed to compile source file: " << path << std::endl;
-        throw new BotRunnerException(msg.str());
+        throw BotRunnerException(msg);
       }
 
       // Evaluate.
@@ -48,7 +55,7 @@ class JavaScript : public BotLanguage {
       catch(...) {
         std::stringstream msg;
         msg << "FATAL: exception evaluating source file: " << path << std::endl;
-        throw new BotRunnerException(msg.str());
+        throw BotRunnerException(msg);
       }
 
       // The bot code should have left a global Bot object, test it.
@@ -56,7 +63,7 @@ class JavaScript : public BotLanguage {
       if (!_bot->IsObject()) {
         std::stringstream msg;
         msg << "FATAL: global Bot object not defined in: " << path << std::endl;
-        throw new BotRunnerException(msg.str());
+        throw BotRunnerException(msg);
       }
 
       // Create the JS arena object.
@@ -71,7 +78,7 @@ class JavaScript : public BotLanguage {
       if (!func->IsFunction()) {
         std::stringstream msg;
         msg << "FATAL: Bot.stateChange() not defined in: " << path << std::endl;
-        throw new BotRunnerException(msg.str());
+        throw BotRunnerException(msg);
       }
       stateChangeImpl = Persistent<Value>::New(func);
 
@@ -80,7 +87,7 @@ class JavaScript : public BotLanguage {
       if (!func->IsFunction()) {
         std::stringstream msg;
         msg << "FATAL: Bot.aim() not defined in: " << path << std::endl;
-        throw new BotRunnerException(msg.str());
+        throw BotRunnerException(msg);
       }
       aimImpl = Persistent<Value>::New(func);
 
@@ -89,42 +96,56 @@ class JavaScript : public BotLanguage {
       if (!func->IsFunction()) {
         std::stringstream msg;
         msg << "FATAL: Bot.move() not defined in: " << path << std::endl;
-        throw new BotRunnerException(msg.str());
+        throw BotRunnerException(msg);
       }
       moveImpl = Persistent<Value>::New(func);
     }
 
-    void stateChange(const Arena &arena, std::stringstream &rval) throw() {
+    void stateChange(const Arena &arena, std::stringstream &rval) {
+      TryCatch exception;
       HandleScope handle_scope;
       Handle<Object> bot = prepareArena(arena);
       Handle<Value> args[1] = { arenaObject };
       Handle<Value> result = Function::Cast(*stateChangeImpl)->Call(bot, 1, args);
+      if (exception.HasCaught()) {
+        std::stringstream msg;
+        String::AsciiValue jsmsg(exception.Message()->Get());
+        msg << "FATAL: exception while invoking stateChange(): " << *jsmsg;
+        throw BotRunnerException(msg);
+      }
       if (!result->IsString()) {
-        throw new BotRunnerException("FATAL: broken stateChange() implementation, it must return a string.");
+        throw BotRunnerException("FATAL: broken stateChange() implementation, it must return a string.");
       }
       String::AsciiValue ascii(result);
       rval << *ascii;
     }
 
-    void move(const Arena &arena, std::stringstream &rvaldir, double &rvalspeed) throw() {
+    void move(const Arena &arena, std::stringstream &rvaldir, double &rvalspeed) {
+      TryCatch exception;
       HandleScope handle_scope;
       Handle<Object> bot = prepareArena(arena);
       Handle<Value> args[1] = { arenaObject };
       Handle<Value> result = Function::Cast(*moveImpl)->Call(bot, 1, args);
+      if (exception.HasCaught()) {
+        std::stringstream msg;
+        String::AsciiValue jsmsg(exception.Message()->Get());
+        msg << "FATAL: exception while invoking move(): " << *jsmsg;
+        throw BotRunnerException(msg);
+      }
       if (!result->IsArray()) {
-        throw new BotRunnerException("FATAL: broken move() implementation, did not return an array.");
+        throw BotRunnerException("FATAL: broken move() implementation, did not return an array.");
       }
       Array *a = Array::Cast(*result);
       if (a->Length() != 2) {
-        throw new BotRunnerException("FATAL: broken move() implementation, returned array must contain exactly two items.");
+        throw BotRunnerException("FATAL: broken move() implementation, returned array must contain exactly two items.");
       }
       Handle<Value> a0 = a->Get(0);
       if (!a0->IsString()) {
-        throw new BotRunnerException("FATAL: broken move() implementation, first element of returned array must be a string.");
+        throw BotRunnerException("FATAL: broken move() implementation, first element of returned array must be a string.");
       }
       Handle<Value> a1 = a->Get(1);
       if (!a1->IsNumber()) {
-        throw new BotRunnerException("FATAL: broken move() implementation, second element of returned array must be numeric.");
+        throw BotRunnerException("FATAL: broken move() implementation, second element of returned array must be numeric.");
       }
       String::AsciiValue a0ascii(a0);
       rvaldir << *a0ascii;
@@ -132,20 +153,27 @@ class JavaScript : public BotLanguage {
       String::AsciiValue a1ascii(a1);
     }
 
-    void aim(const Arena &arena, const Weapon &weapon, double &rval) throw() {
+    void aim(const Arena &arena, const Weapon &weapon, double &rval) {
+      TryCatch exception;
       HandleScope handle_scope;
       Handle<Object> bot = prepareArena(arena);
       Handle<Object> jsweapon = Local<Object>::New(Object::New());
       prepareWeapon(weapon, jsweapon);
       Handle<Value> args[2] = { arenaObject, jsweapon };
       Handle<Value> result = Function::Cast(*aimImpl)->Call(bot, 2, args);
+      if (exception.HasCaught()) {
+        std::stringstream msg;
+        String::AsciiValue jsmsg(exception.Message()->Get());
+        msg << "FATAL: exception while invoking aim(): " << *jsmsg;
+        throw BotRunnerException(msg);
+      }
       if (!result->IsNumber()) {
-        throw new BotRunnerException("FATAL: broken aim() implementation, it must return a number.");
+        throw BotRunnerException("FATAL: broken aim() implementation, it must return a number.");
       }
       rval = result->ToNumber()->Value();
     }
 
-    ~JavaScript(void) throw() {
+    ~JavaScript(void) {
       stateChangeImpl.Dispose();
       aimImpl.Dispose();
       moveImpl.Dispose();

@@ -4,6 +4,6 @@
 
 #include <BotLanguage.hpp>
 
-BotLanguage::~BotLanguage(void) throw() {
+BotLanguage::~BotLanguage(void) {
   ;
 }

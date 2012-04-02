@@ -16,15 +16,15 @@ class BotLanguage {
 
   public:
 
-    virtual void init(const char *path) throw() =0;
+    virtual void init(const char *path)=0;
 
-    virtual void stateChange(const Arena&, std::stringstream &rval) throw() =0;
+    virtual void stateChange(const Arena&, std::stringstream &rval)=0;
 
-    virtual void move(const Arena&, std::stringstream &rvaldir, double &rvalspeed) throw() =0;
+    virtual void move(const Arena&, std::stringstream &rvaldir, double &rvalspeed)=0;
 
-    virtual void aim(const Arena&, const Weapon&, double &rval) throw() =0;
+    virtual void aim(const Arena&, const Weapon&, double &rval)=0;
 
-    virtual ~BotLanguage(void) throw();
+    virtual ~BotLanguage(void);
 };
 
 #endif /* [BOTRUNNER_BOTLANGUAGE] */

@@ -177,6 +177,10 @@ if __name__ == '__main__':
     arenaheight = len(bots) * 6 + random.randint(2, 20)
     streamadd(-1, 'init', { 'arena': arena[0], 'w': arenawidth, 'h': arenaheight, 'max_duration': arenaduration })
 
+    # init bots
+    for bot in bots:
+      bot.program.cmd_init(arena[0], arenawidth, arenaheight, arenaduration)
+
     # init obstacles
     obstacles = []
     numobstacles = int(math.sqrt(arenawidth * arenaheight) / 3)
@@ -191,9 +195,8 @@ if __name__ == '__main__':
     for obstacle in obstacles:
       streamadd(-1, 'obstacle', { 'id': obstacle.id, 'x': obstacle.x, 'y': obstacle.y, 'r': obstacle.r })
 
-    # init bots and weapons
+    # init weapons
     for bot in bots:
-      bot.program.cmd_init(arena[0], arenawidth, arenaheight, arenaduration)
       for weapon in bot.weapons:
         bot.program.cmd_weapon(weapon)
         streamadd(-1, 'weapon', { 'bot': bot.id, 'id': weapon.id, 'power': weapon.power, 'aim': weapon.aim })

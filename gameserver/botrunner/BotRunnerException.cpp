@@ -4,11 +4,21 @@
 
 #include <BotRunnerException.hpp>
 
-BotRunnerException::BotRunnerException(const std::string &m) : msg(m) {}
+BotRunnerException::BotRunnerException(std::string &m) {
+  this->msg = m;
+}
 
-BotRunnerException::BotRunnerException(const char *m) : msg(m) {}
+BotRunnerException::BotRunnerException(std::stringstream &m) {
+  this->msg = m.str();
+}
 
-BotRunnerException::~BotRunnerException() throw() {}
+BotRunnerException::BotRunnerException(const char *m) {
+  this->msg = m;
+}
+
+BotRunnerException::~BotRunnerException() throw() {
+  ;
+}
 
 const char* BotRunnerException::what() const throw() {
   return msg.c_str();
