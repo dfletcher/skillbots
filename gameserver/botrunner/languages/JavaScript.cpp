@@ -227,7 +227,7 @@ class JavaScript : public BotLanguage {
         weapons = _weapons->ToObject();
       }
       else {
-        weapons = Local<Object>::New(Object::New());
+        weapons = Local<Object>::New(Array::New());
         jsbot->Set(String::New("weapons"), weapons);
       }
       int idx = 0;
@@ -255,7 +255,7 @@ class JavaScript : public BotLanguage {
         arenaObject->Set(String::New("bot"), bot);
       }
       prepareBot(arena.bot, bot);
-      Handle<Object> enemies = Local<Object>::New(Object::New());
+      Handle<Object> enemies = Local<Object>::New(Array::New());
       arenaObject->Set(String::New("enemies"), enemies);
       idx = 0;
       for (BotMapIterator i = arena.enemies.begin(); i != arena.enemies.end(); i++) {
@@ -265,7 +265,7 @@ class JavaScript : public BotLanguage {
           enemies->Set(idx++, enemy);
         }
       }
-      Handle<Object> obstacles = Local<Object>::New(Object::New());
+      Handle<Object> obstacles = Local<Object>::New(Array::New());
       arenaObject->Set(String::New("obstacles"), obstacles);
       idx = 0;
       for (ObstacleMapIterator i = arena.obstacles.begin(); i != arena.obstacles.end(); i++) {
