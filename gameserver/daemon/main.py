@@ -163,7 +163,7 @@ if __name__ == '__main__':
       c.execute("""
         INSERT INTO skb_arena_stream
         SET command='%s', aid=%d, t=%d, arguments='%s'
-      """ % (cmd, arena[0], t, json.dumps(args)))
+      """ % (cmd, arena[0], t, json.dumps(args).replace("'", "''")))
 
     # build bot objects
     bots = []
@@ -179,7 +179,9 @@ if __name__ == '__main__':
 
     # init bots
     for bot in bots:
-      bot.program.cmd_init(arena[0], arenawidth, arenaheight, arenaduration)
+      try: bot.program.cmd_init(arena[0], arenawidth, arenaheight, arenaduration)
+      except BotProgram.BotProgramException as e:
+        streamadd(-1, 'error', { 'bot': bot.id, 'error': e.message})
 
     # init obstacles
     obstacles = []
@@ -190,7 +192,10 @@ if __name__ == '__main__':
       x = random.randint(0, arenawidth)
       y = random.randint(0, arenaheight)
       obstacle = Obstacle(i, x, y, r)
-      for bot in bots: bot.program.cmd_obstacle(obstacle)
+      for bot in bots:
+        try: bot.program.cmd_obstacle(obstacle)
+        except BotProgram.BotProgramException as e:
+          streamadd(-1, 'error', { 'bot': bot.id, 'error': e.message})
       obstacles.append(obstacle)
     for obstacle in obstacles:
       streamadd(-1, 'obstacle', { 'id': obstacle.id, 'x': obstacle.x, 'y': obstacle.y, 'r': obstacle.r })
@@ -198,7 +203,9 @@ if __name__ == '__main__':
     # init weapons
     for bot in bots:
       for weapon in bot.weapons:
-        bot.program.cmd_weapon(weapon)
+        try: bot.program.cmd_weapon(weapon)
+        except BotProgram.BotProgramException as e:
+          streamadd(-1, 'error', { 'bot': bot.id, 'error': e.message})
         streamadd(-1, 'weapon', { 'bot': bot.id, 'id': weapon.id, 'power': weapon.power, 'aim': weapon.aim })
 
     # init enemies
@@ -246,21 +253,35 @@ if __name__ == '__main__':
       for bot in bots:
 
         # Update remote bot.
-        bot.program.cmd_time(t)
-        bot.program.cmd_bot(bot)
+        try: bot.program.cmd_time(t)
+        except BotProgram.BotProgramException as e:
+          streamadd(t, 'error', { 'bot': bot.id, 'error': e.message})
+        try: bot.program.cmd_bot(bot)
+        except BotProgram.BotProgramException as e:
+          streamadd(t, 'error', { 'bot': bot.id, 'error': e.message})
 
         # Tell remote if obstacles are in range.
         for obstacle in obstacles:
-          bot.program.cmd_obstacle_in_range(obstacle, obstacle.in_range(bot))
+          try: bot.program.cmd_obstacle_in_range(obstacle, obstacle.in_range(bot))
+          except BotProgram.BotProgramException as e:
+            streamadd(t, 'error', { 'bot': bot.id, 'error': e.message})
 
         # Update remote enemy.
         for enemy in bot.enemies:
-          bot.program.cmd_enemy(enemy, bot.in_range(enemy))
+          try: bot.program.cmd_enemy(enemy, bot.in_range(enemy))
+          except BotProgram.BotProgramException as e:
+            streamadd(t, 'error', { 'bot': bot.id, 'error': e.message})
           for weapon in enemy.weapons:
-            bot.program.cmd_enemy_weapon(enemy, weapon)
+            try: bot.program.cmd_enemy_weapon(enemy, weapon)
+            except BotProgram.BotProgramException as e:
+              streamadd(t, 'error', { 'bot': bot.id, 'error': e.message})
 
         # Invoke stateChange().
-        bot.state = bot.program.cmd_state_change()
+        try: bot.state = bot.program.cmd_state_change()
+        except BotProgram.BotProgramException as e:
+          streamadd(t, 'error', { 'bot': bot.id, 'error': e.message})
+          bot.state = 'stop'
+
         streamadd(t, 'bot', {
           'id': bot.id,
           'x': bot.x,
@@ -276,7 +297,10 @@ if __name__ == '__main__':
       for bot in bots:
         if bot.state in ('attack', 'attack+move'):
           for weapon in bot.weapons:
-            weapon.aim = bot.program.cmd_aim(weapon)
+            try: weapon.aim = bot.program.cmd_aim(weapon)
+            except BotProgram.BotProgramException as e:
+              streamadd(t, 'error', { 'bot': bot.id, 'error': e.message})
+              weapon.aim = 0.0
             streamadd(t, 'aim', { 'bot': bot.id, 'weapon': weapon.id, 'aim': weapon.aim })
 
       # Everybody who's moving, move.
@@ -284,7 +308,11 @@ if __name__ == '__main__':
         if bot.state in ('move', 'attack+move', 'defend+move'):
 
           # Change bot direction.
-          bot.dir, bot.speed = bot.program.cmd_move()
+          try: bot.dir, bot.speed = bot.program.cmd_move()
+          except BotProgram.BotProgramException as e:
+            streamadd(t, 'error', { 'bot': bot.id, 'error': e.message})
+            bot.dir = 'n'
+            bot.speed = 0.0
           if bot.dir == 'n': d = (0, 0-bot.speed)
           elif bot.dir == 'ne': d = (bot.speed, 0-bot.speed)
           elif bot.dir == 'e': d = (bot.speed, 0)
@@ -371,7 +399,9 @@ if __name__ == '__main__':
         if not bot.is_alive():
           streamadd(t, 'death', { 'bot': bot.id })
           log("bot %d has died" % (bot.id,))
-          bot.program.cmd_quit()
+          try: bot.program.cmd_quit()
+          except BotProgram.BotProgramException as e:
+            streamadd(t, 'error', { 'bot': bot.id, 'error': e.message})
           deaths.append((bot, t))
       bots = [bot for bot in bots if bot.is_alive()]
 
@@ -414,7 +444,11 @@ if __name__ == '__main__':
       for bot in bots: streamadd(t, 'livedraw', { 'bot': bot.id })
       log("it's a draw, bots survived.")
 
-    for bot in bots: bot.program.cmd_quit()
+    # Shutdown all remaining bots.
+    for bot in bots:
+      try: bot.program.cmd_quit()
+      except BotProgram.BotProgramException as e:
+        streamadd(t, 'error', { 'bot': bot.id, 'error': e.message})
 
     streamadd(t, 'end', { 'arena': arena[0] })
 

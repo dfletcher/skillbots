@@ -4,6 +4,10 @@
 
 #include <BotRunnerException.hpp>
 
+BotRunnerException::BotRunnerException(void) {
+  this->msg = "";
+}
+
 BotRunnerException::BotRunnerException(std::string &m) {
   this->msg = m;
 }

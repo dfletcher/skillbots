@@ -4,6 +4,38 @@
 
 using namespace v8;
 
+class JavaScriptException : public BotRunnerException {
+  public:
+    JavaScriptException(const char *func, Handle<Message> message) {
+      int linestart = message->GetStartColumn();
+      int lineend = message->GetEndColumn();
+      int errlen = lineend - linestart;
+      std::stringstream smsg;
+      String::AsciiValue sourceline(message->GetSourceLine());
+      String::AsciiValue jsmsg(message->Get());
+      std::string errcode(*sourceline);
+      errcode = errcode.substr(linestart, lineend);
+      smsg << "Exception occurred at line " << message->GetLineNumber();
+      smsg << ", column " << linestart << " near '" << errcode << "'. ";
+      smsg << *jsmsg << std::endl;
+      Handle<StackTrace> st = message->GetStackTrace();
+      if (*st) {
+        for (uint32_t i=0; i < st->GetFrameCount(); i++) {
+          Handle<StackFrame> sf = st->GetFrame(i);
+          String::AsciiValue jsfunc(sf->GetFunctionName());
+          smsg << " at " << *jsfunc << ", line " << sf->GetLineNumber();
+          smsg << ", column " << sf->GetColumn() << std::endl;
+        }
+      }
+      msg = smsg.str();
+    }
+    JavaScriptException(const char *m) : BotRunnerException(m) { ; }
+    JavaScriptException(std::string &m) : BotRunnerException(m) { ; }
+    JavaScriptException(std::stringstream &m) : BotRunnerException(m) { ; }
+    ~JavaScriptException() throw() { ; }
+};
+
+
 class JavaScript : public BotLanguage {
 
   public:
@@ -22,7 +54,7 @@ class JavaScript : public BotLanguage {
       if (!Utility::readfile(path, botcode)) {
         std::stringstream msg;
         msg << "FATAL: could not read source file: " << path << std::endl;
-        throw BotRunnerException(msg);
+        throw JavaScriptException(msg);
       }
       Handle<String> source = String::New(botcode.str().c_str());
 
@@ -34,18 +66,15 @@ class JavaScript : public BotLanguage {
       catch(...) {
         std::stringstream msg;
         msg << "FATAL: exception compiling source file: " << path << std::endl;
-        throw BotRunnerException(msg);
+        throw JavaScriptException(msg);
       }
       if (exception.HasCaught()) {
-        std::stringstream msg;
-        String::AsciiValue jsmsg(exception.Message()->Get());
-        msg << "FATAL: exception while invoking init(): " << *jsmsg;
-        throw BotRunnerException(msg);
+        throw JavaScriptException("init", exception.Message());
       }
       if (!*script) {
         std::stringstream msg;
         msg << "FATAL: failed to compile source file: " << path << std::endl;
-        throw BotRunnerException(msg);
+        throw JavaScriptException(msg);
       }
 
       // Evaluate.
@@ -55,7 +84,7 @@ class JavaScript : public BotLanguage {
       catch(...) {
         std::stringstream msg;
         msg << "FATAL: exception evaluating source file: " << path << std::endl;
-        throw BotRunnerException(msg);
+        throw JavaScriptException(msg);
       }
 
       // The bot code should have left a global Bot object, test it.
@@ -63,7 +92,7 @@ class JavaScript : public BotLanguage {
       if (!_bot->IsObject()) {
         std::stringstream msg;
         msg << "FATAL: global Bot object not defined in: " << path << std::endl;
-        throw BotRunnerException(msg);
+        throw JavaScriptException(msg);
       }
 
       // Create the JS arena object.
@@ -78,7 +107,7 @@ class JavaScript : public BotLanguage {
       if (!func->IsFunction()) {
         std::stringstream msg;
         msg << "FATAL: Bot.stateChange() not defined in: " << path << std::endl;
-        throw BotRunnerException(msg);
+        throw JavaScriptException(msg);
       }
       stateChangeImpl = Persistent<Value>::New(func);
 
@@ -87,7 +116,7 @@ class JavaScript : public BotLanguage {
       if (!func->IsFunction()) {
         std::stringstream msg;
         msg << "FATAL: Bot.aim() not defined in: " << path << std::endl;
-        throw BotRunnerException(msg);
+        throw JavaScriptException(msg);
       }
       aimImpl = Persistent<Value>::New(func);
 
@@ -96,7 +125,7 @@ class JavaScript : public BotLanguage {
       if (!func->IsFunction()) {
         std::stringstream msg;
         msg << "FATAL: Bot.move() not defined in: " << path << std::endl;
-        throw BotRunnerException(msg);
+        throw JavaScriptException(msg);
       }
       moveImpl = Persistent<Value>::New(func);
     }
@@ -108,13 +137,10 @@ class JavaScript : public BotLanguage {
       Handle<Value> args[1] = { arenaObject };
       Handle<Value> result = Function::Cast(*stateChangeImpl)->Call(bot, 1, args);
       if (exception.HasCaught()) {
-        std::stringstream msg;
-        String::AsciiValue jsmsg(exception.Message()->Get());
-        msg << "FATAL: exception while invoking stateChange(): " << *jsmsg;
-        throw BotRunnerException(msg);
+        throw JavaScriptException("stateChange", exception.Message());
       }
       if (!result->IsString()) {
-        throw BotRunnerException("FATAL: broken stateChange() implementation, it must return a string.");
+        throw JavaScriptException("FATAL: broken stateChange() implementation, it must return a string.");
       }
       String::AsciiValue ascii(result);
       rval << *ascii;
@@ -127,25 +153,22 @@ class JavaScript : public BotLanguage {
       Handle<Value> args[1] = { arenaObject };
       Handle<Value> result = Function::Cast(*moveImpl)->Call(bot, 1, args);
       if (exception.HasCaught()) {
-        std::stringstream msg;
-        String::AsciiValue jsmsg(exception.Message()->Get());
-        msg << "FATAL: exception while invoking move(): " << *jsmsg;
-        throw BotRunnerException(msg);
+        throw JavaScriptException("move", exception.Message());
       }
       if (!result->IsArray()) {
-        throw BotRunnerException("FATAL: broken move() implementation, did not return an array.");
+        throw JavaScriptException("FATAL: broken move() implementation, did not return an array.");
       }
       Array *a = Array::Cast(*result);
       if (a->Length() != 2) {
-        throw BotRunnerException("FATAL: broken move() implementation, returned array must contain exactly two items.");
+        throw JavaScriptException("FATAL: broken move() implementation, returned array must contain exactly two items.");
       }
       Handle<Value> a0 = a->Get(0);
       if (!a0->IsString()) {
-        throw BotRunnerException("FATAL: broken move() implementation, first element of returned array must be a string.");
+        throw JavaScriptException("FATAL: broken move() implementation, first element of returned array must be a string.");
       }
       Handle<Value> a1 = a->Get(1);
       if (!a1->IsNumber()) {
-        throw BotRunnerException("FATAL: broken move() implementation, second element of returned array must be numeric.");
+        throw JavaScriptException("FATAL: broken move() implementation, second element of returned array must be numeric.");
       }
       String::AsciiValue a0ascii(a0);
       rvaldir << *a0ascii;
@@ -162,13 +185,10 @@ class JavaScript : public BotLanguage {
       Handle<Value> args[2] = { arenaObject, jsweapon };
       Handle<Value> result = Function::Cast(*aimImpl)->Call(bot, 2, args);
       if (exception.HasCaught()) {
-        std::stringstream msg;
-        String::AsciiValue jsmsg(exception.Message()->Get());
-        msg << "FATAL: exception while invoking aim(): " << *jsmsg;
-        throw BotRunnerException(msg);
+        throw JavaScriptException("aim", exception.Message());
       }
       if (!result->IsNumber()) {
-        throw BotRunnerException("FATAL: broken aim() implementation, it must return a number.");
+        throw JavaScriptException("FATAL: broken aim() implementation, it must return a number.");
       }
       rval = result->ToNumber()->Value();
     }
@@ -268,6 +288,7 @@ class JavaScript : public BotLanguage {
 };
 
 int main(int argc, char* argv[]) {
+  V8::SetCaptureStackTraceForUncaughtExceptions(true, 25, StackTrace::kDetailed);
   HandleScope handle_scope;
   Persistent<Context> context = Context::New();
   Context::Scope context_scope(context);
@@ -275,4 +296,3 @@ int main(int argc, char* argv[]) {
   BotRunner runner;
   return runner.run(language, argc, argv);
 }
-

@@ -13,13 +13,9 @@ languages = {
 }
 
 class BotProgramException(Exception):
-
   def __init__(self, message):
     Exception.__init__(self)
     self.message = message
-
-  def print_cmd_error(self, cmd):
-    log('Error: ' + self.message + ' in command: ' + cmd)
 
 class BotProgram(threading.Thread):
 
@@ -40,8 +36,7 @@ class BotProgram(threading.Thread):
     threading.Thread.__init__(self)
 
   def send(self, command):
-    if self.program.poll() != None:
-      raise BotProgramException("Cannot send to crashed program: " + command)
+    if self.program.poll() != None: return 'ok' # TODO: better handling of crashed programs
     self.input = None
     self.program.stdin.write(command + "\n")
     self.program.stdin.flush()
@@ -69,37 +64,27 @@ class BotProgram(threading.Thread):
     while self.program.poll() == None:
       try:
         self.input = self.program.stdout.readline().strip()
+        if not self.input:
+          try: self.error = self.program.stderr.readline().strip()
+          except: pass
+          break
       except:
         self.error = self.program.stderr.readline().strip()
-      if not self.input:
-        self.error = self.program.stderr.readline().strip()
-    log("bot exit: " + str(self.error))
+    log("bot exit: " + str(self.error if self.error else self.input))
 
   def write_cmd(self, c, printcmd = True):
-    try:
-      r = self.send(c)
-      if printcmd: log(c)
-      return r == 'ok'
-    except BotProgramException as e:
-      e.print_cmd_error(c)
-      return False
+    r = self.send(c)
+    if printcmd: log(c)
+    return r == 'ok'
 
   def read_cmd(self, c, dflt, printcmd = True):
-    try:
-      r = self.send(c)
-      if printcmd: log(c + ': ' + str(r))
-      return r
-    except BotProgramException as e:
-      e.print_cmd_error(c)
-      return dflt
+    r = self.send(c)
+    if printcmd: log(c + ': ' + str(r))
+    return r
 
   def cmd_quit(self):
-    try:
-      self.send('quit')
-      return True
-    except BotProgramException as e:
-      e.print_cmd_error(cmd)
-      return False
+    self.send('quit')
+    return True
 
   def cmd_init(self, id, w, h, d):
     return self.write_cmd(

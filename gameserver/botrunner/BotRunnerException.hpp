@@ -11,12 +11,13 @@
 
 class BotRunnerException : public std::exception {
   public:
+    BotRunnerException(void);
     BotRunnerException(std::string &msg);
     BotRunnerException(std::stringstream &msg);
     BotRunnerException(const char *msg);
     ~BotRunnerException() throw();
     const char* what(void) const throw();
-  private:
+  protected:
     std::string msg;
 };
 
