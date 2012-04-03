@@ -1,3 +1,7 @@
+/**
+ *  @file BotRunner.cpp
+ */
+
 #include <streambuf>
 #include <exception>
 #include <iostream>
@@ -47,7 +51,7 @@ int BotRunner::run(BotLanguage &language, int argc, char* argv[]) {
   int exitval = 0;
 
   if (argc != 2) {
-    std::cerr << "FATAL: incorrect program usage: " << argv[0] << " (path to bot file)" << std::endl;
+    std::cerr << "0 0 FATAL: incorrect program usage: " << argv[0] << " (path to bot file)" << std::endl;
     return 1;
   }
 
@@ -75,14 +79,19 @@ int BotRunner::run(BotLanguage &language, int argc, char* argv[]) {
       try {
         language.init(argv[1]);
       }
-      catch (std::exception &e) {
-        std::cerr << "Exception occurred in language.init(): " << e.what() << '.' << std::endl;
+      catch (BotRunnerException &e) {
+        std::cerr << e.line << ' ' << e.column << ' ' << e.msg << '.' << std::endl;
         exitval = 1;
         break;
       }
-      catch (...) {
-        std::cerr << "Unknown exception occurred in language.init()." << std::endl;
+      catch (std::exception &e) {
+        std::cerr << "0 0 " << e.what() << '.' << std::endl;
         exitval = 2;
+        break;
+      }
+      catch (...) {
+        std::cerr << "0 0 " << "Unknown exception occurred in language.init()." << std::endl;
+        exitval = 3;
         break;
       }
       std::cout << "ok" << std::endl;
@@ -94,14 +103,19 @@ int BotRunner::run(BotLanguage &language, int argc, char* argv[]) {
       try {
         language.stateChange(arena, state);
       }
+      catch (BotRunnerException &e) {
+        std::cerr << e.line << ' ' << e.column << ' ' << e.msg << '.' << std::endl;
+        exitval = 1;
+        break;
+      }
       catch (std::exception &e) {
-        std::cerr << "Exception occurred in language.stateChange(): " << e.what() << '.' << std::endl;
-        exitval = 3;
+        std::cerr << "0 0 " << e.what() << '.' << std::endl;
+        exitval = 2;
         break;
       }
       catch (...) {
-        std::cerr << "Unknown exception occurred in language.stateChange()." << std::endl;
-        exitval = 4;
+        std::cerr << "0 0 " << "Unknown exception occurred in language.stateChange()." << std::endl;
+        exitval = 3;
         break;
       }
       const char *cstate = state.str().c_str();
@@ -111,7 +125,7 @@ int BotRunner::run(BotLanguage &language, int argc, char* argv[]) {
         (state_attack_move.compare(cstate) != 0) &&
         (state_defend.compare(cstate) != 0) &&
         (state_defend_move.compare(cstate) != 0)) {
-        std::cerr << "FATAL: broken stateChange() implementation, returned unknown state, should be one of: (stop,move,attack,attack+move,defend,defend+move) but received: " << state << std::endl;
+        std::cerr << "0 0 FATAL: broken stateChange() implementation, returned unknown state, should be one of: (stop,move,attack,attack+move,defend,defend+move) but received: " << state << std::endl;
         exitval = 5;
         break;
       }
@@ -124,14 +138,19 @@ int BotRunner::run(BotLanguage &language, int argc, char* argv[]) {
       try {
         language.aim(arena, arena.bot.weapons[Utility::str2int(linevec[1])], rval);
       }
+      catch (BotRunnerException &e) {
+        std::cerr << e.line << ' ' << e.column << ' ' << e.msg << '.' << std::endl;
+        exitval = 1;
+        break;
+      }
       catch (std::exception &e) {
-        std::cerr << "Exception occurred in language.aim(): " << e.what() << '.' << std::endl;
-        exitval = 6;
+        std::cerr << "0 0 " << e.what() << '.' << std::endl;
+        exitval = 2;
         break;
       }
       catch (...) {
-        std::cerr << "Unknown exception occurred in language.aim()." << std::endl;
-        exitval = 7;
+        std::cerr << "0 0 " << "Unknown exception occurred in language.aim()." << std::endl;
+        exitval = 3;
         break;
       }
       std::cout << rval << std::endl;
@@ -144,14 +163,19 @@ int BotRunner::run(BotLanguage &language, int argc, char* argv[]) {
       try {
         language.move(arena, dir, speed);
       }
+      catch (BotRunnerException &e) {
+        std::cerr << e.line << ' ' << e.column << ' ' << e.msg << '.' << std::endl;
+        exitval = 1;
+        break;
+      }
       catch (std::exception &e) {
-        std::cerr << "Exception occurred in language.move(): " << e.what() << '.' << std::endl;
-        exitval = 8;
+        std::cerr << "0 0 " << e.what() << '.' << std::endl;
+        exitval = 2;
         break;
       }
       catch (...) {
-        std::cerr << "Unknown exception occurred in language.move()." << std::endl;
-        exitval = 9;
+        std::cerr << "0 0 " << "Unknown exception occurred in language.move()." << std::endl;
+        exitval = 3;
         break;
       }
       const char *cdir = dir.str().c_str();
@@ -163,7 +187,7 @@ int BotRunner::run(BotLanguage &language, int argc, char* argv[]) {
         (dir_sw.compare(cdir) != 0) &&
         (dir_w.compare(cdir) != 0) &&
         (dir_nw.compare(cdir) != 0)) {
-        std::cerr << "FATAL: broken move() implementation, first element of returned array returned unknown direction should be one of: (n,ne,e,se,s,sw,w,nw) but received: " << dir << std::endl;
+        std::cerr << "0 0 FATAL: broken move() implementation, first element of returned array returned unknown direction should be one of: (n,ne,e,se,s,sw,w,nw) but received: " << dir << std::endl;
         exitval = 10;
         break;
       }
@@ -242,7 +266,7 @@ int BotRunner::run(BotLanguage &language, int argc, char* argv[]) {
 
     // unhandled command
     else {
-      std::cerr << "Unknown command: " << linevec[0] << std::endl;
+      std::cerr << "0 0 Unknown command: " << linevec[0] << std::endl;
     }
 
     std::cout.flush();

@@ -13,9 +13,21 @@ languages = {
 }
 
 class BotProgramException(Exception):
+
   def __init__(self, message):
     Exception.__init__(self)
+    self.line, message = self.__findNumArg(message)
+    self.column, message = self.__findNumArg(message)
     self.message = message
+
+  def __findNumArg(self, message):
+    rval = ''
+    while len(message) and message[0].isspace(): message = message[1:]
+    while len(message) and message[0].isdigit():
+      rval += message[0]
+      message = message[1:]
+    while len(message) and message[0].isspace(): message = message[1:]
+    return (int(rval), message)
 
 class BotProgram(threading.Thread):
 
@@ -52,7 +64,7 @@ class BotProgram(threading.Thread):
           raise BotProgramException(self.error)
         elif timeout > MAX_EXECUTION_TIME:
           self.__kill()
-          raise BotProgramException("Timeout waiting for command: " + command)
+          raise BotProgramException("0 0 Timeout waiting for command: " + command)
         sleep(SLEEP_TIME)
         timeout += SLEEP_TIME
 

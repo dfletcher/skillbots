@@ -7,17 +7,13 @@ using namespace v8;
 class JavaScriptException : public BotRunnerException {
   public:
     JavaScriptException(const char *func, Handle<Message> message) {
-      int linestart = message->GetStartColumn();
-      int lineend = message->GetEndColumn();
-      int errlen = lineend - linestart;
+      line = message->GetLineNumber();
+      column = message->GetStartColumn();
       std::stringstream smsg;
       String::AsciiValue sourceline(message->GetSourceLine());
       String::AsciiValue jsmsg(message->Get());
-      std::string errcode(*sourceline);
-      errcode = errcode.substr(linestart, lineend);
-      smsg << "Exception occurred at line " << message->GetLineNumber();
-      smsg << ", column " << linestart << " near '" << errcode << "'. ";
-      smsg << *jsmsg << std::endl;
+      smsg << "Exception occurred in " << func << " at line " << line;
+      smsg << ", column " << column << ". " << *jsmsg << '.' << std::endl;
       Handle<StackTrace> st = message->GetStackTrace();
       if (*st) {
         for (uint32_t i=0; i < st->GetFrameCount(); i++) {
@@ -29,12 +25,8 @@ class JavaScriptException : public BotRunnerException {
       }
       msg = smsg.str();
     }
-    JavaScriptException(const char *m) : BotRunnerException(m) { ; }
-    JavaScriptException(std::string &m) : BotRunnerException(m) { ; }
-    JavaScriptException(std::stringstream &m) : BotRunnerException(m) { ; }
     ~JavaScriptException() throw() { ; }
 };
-
 
 class JavaScript : public BotLanguage {
 
@@ -54,7 +46,7 @@ class JavaScript : public BotLanguage {
       if (!Utility::readfile(path, botcode)) {
         std::stringstream msg;
         msg << "FATAL: could not read source file: " << path << std::endl;
-        throw JavaScriptException(msg);
+        throw BotRunnerException(msg);
       }
       Handle<String> source = String::New(botcode.str().c_str());
 
@@ -66,7 +58,7 @@ class JavaScript : public BotLanguage {
       catch(...) {
         std::stringstream msg;
         msg << "FATAL: exception compiling source file: " << path << std::endl;
-        throw JavaScriptException(msg);
+        throw BotRunnerException(msg);
       }
       if (exception.HasCaught()) {
         throw JavaScriptException("init", exception.Message());
@@ -74,7 +66,7 @@ class JavaScript : public BotLanguage {
       if (!*script) {
         std::stringstream msg;
         msg << "FATAL: failed to compile source file: " << path << std::endl;
-        throw JavaScriptException(msg);
+        throw BotRunnerException(msg);
       }
 
       // Evaluate.
@@ -84,7 +76,7 @@ class JavaScript : public BotLanguage {
       catch(...) {
         std::stringstream msg;
         msg << "FATAL: exception evaluating source file: " << path << std::endl;
-        throw JavaScriptException(msg);
+        throw BotRunnerException(msg);
       }
 
       // The bot code should have left a global Bot object, test it.
@@ -92,7 +84,7 @@ class JavaScript : public BotLanguage {
       if (!_bot->IsObject()) {
         std::stringstream msg;
         msg << "FATAL: global Bot object not defined in: " << path << std::endl;
-        throw JavaScriptException(msg);
+        throw BotRunnerException(msg);
       }
 
       // Create the JS arena object.
@@ -107,7 +99,7 @@ class JavaScript : public BotLanguage {
       if (!func->IsFunction()) {
         std::stringstream msg;
         msg << "FATAL: Bot.stateChange() not defined in: " << path << std::endl;
-        throw JavaScriptException(msg);
+        throw BotRunnerException(msg);
       }
       stateChangeImpl = Persistent<Value>::New(func);
 
@@ -116,7 +108,7 @@ class JavaScript : public BotLanguage {
       if (!func->IsFunction()) {
         std::stringstream msg;
         msg << "FATAL: Bot.aim() not defined in: " << path << std::endl;
-        throw JavaScriptException(msg);
+        throw BotRunnerException(msg);
       }
       aimImpl = Persistent<Value>::New(func);
 
@@ -125,7 +117,7 @@ class JavaScript : public BotLanguage {
       if (!func->IsFunction()) {
         std::stringstream msg;
         msg << "FATAL: Bot.move() not defined in: " << path << std::endl;
-        throw JavaScriptException(msg);
+        throw BotRunnerException(msg);
       }
       moveImpl = Persistent<Value>::New(func);
     }
@@ -140,7 +132,7 @@ class JavaScript : public BotLanguage {
         throw JavaScriptException("stateChange", exception.Message());
       }
       if (!result->IsString()) {
-        throw JavaScriptException("FATAL: broken stateChange() implementation, it must return a string.");
+        throw BotRunnerException("FATAL: broken stateChange() implementation, it must return a string.");
       }
       String::AsciiValue ascii(result);
       rval << *ascii;
@@ -156,19 +148,19 @@ class JavaScript : public BotLanguage {
         throw JavaScriptException("move", exception.Message());
       }
       if (!result->IsArray()) {
-        throw JavaScriptException("FATAL: broken move() implementation, did not return an array.");
+        throw BotRunnerException("FATAL: broken move() implementation, did not return an array.");
       }
       Array *a = Array::Cast(*result);
       if (a->Length() != 2) {
-        throw JavaScriptException("FATAL: broken move() implementation, returned array must contain exactly two items.");
+        throw BotRunnerException("FATAL: broken move() implementation, returned array must contain exactly two items.");
       }
       Handle<Value> a0 = a->Get(0);
       if (!a0->IsString()) {
-        throw JavaScriptException("FATAL: broken move() implementation, first element of returned array must be a string.");
+        throw BotRunnerException("FATAL: broken move() implementation, first element of returned array must be a string.");
       }
       Handle<Value> a1 = a->Get(1);
       if (!a1->IsNumber()) {
-        throw JavaScriptException("FATAL: broken move() implementation, second element of returned array must be numeric.");
+        throw BotRunnerException("FATAL: broken move() implementation, second element of returned array must be numeric.");
       }
       String::AsciiValue a0ascii(a0);
       rvaldir << *a0ascii;
@@ -188,7 +180,7 @@ class JavaScript : public BotLanguage {
         throw JavaScriptException("aim", exception.Message());
       }
       if (!result->IsNumber()) {
-        throw JavaScriptException("FATAL: broken aim() implementation, it must return a number.");
+        throw BotRunnerException("FATAL: broken aim() implementation, it must return a number.");
       }
       rval = result->ToNumber()->Value();
     }

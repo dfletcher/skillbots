@@ -4,20 +4,28 @@
 
 #include <BotRunnerException.hpp>
 
-BotRunnerException::BotRunnerException(void) {
-  this->msg = "";
+BotRunnerException::BotRunnerException(int l, int c) {
+  msg = "";
+  line = l;
+  column = c;
 }
 
-BotRunnerException::BotRunnerException(std::string &m) {
-  this->msg = m;
+BotRunnerException::BotRunnerException(std::string &m, int l, int c) {
+  msg = m;
+  line = l;
+  column = c;
 }
 
-BotRunnerException::BotRunnerException(std::stringstream &m) {
-  this->msg = m.str();
+BotRunnerException::BotRunnerException(std::stringstream &m, int l, int c) {
+  msg = m.str();
+  line = l;
+  column = c;
 }
 
-BotRunnerException::BotRunnerException(const char *m) {
-  this->msg = m;
+BotRunnerException::BotRunnerException(const char *m, int l, int c) {
+  msg = m;
+  line = l;
+  column = c;
 }
 
 BotRunnerException::~BotRunnerException() throw() {
