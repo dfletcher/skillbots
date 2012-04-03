@@ -90,7 +90,7 @@ class Bot(object):
     self.energy = 25
     self.condition = 1.0
     self.speed = 1.0
-    self.scanning_range = 8
+    self.scanning_range = 12
     self.dir = 'n'
     self.state = 'move'
     self.weapons = [ Weapon(self) ]
