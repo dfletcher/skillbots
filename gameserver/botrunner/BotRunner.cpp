@@ -129,7 +129,7 @@ int BotRunner::run(BotLanguage &language, int argc, char* argv[]) {
         exitval = 5;
         break;
       }
-      std::cout << state << std::endl;
+      std::cout << cstate << std::endl;
     }
 
     // aim weapon
@@ -191,7 +191,7 @@ int BotRunner::run(BotLanguage &language, int argc, char* argv[]) {
         exitval = 10;
         break;
       }
-      std::cout << dir << ' ' << speed << std::endl;
+      std::cout << cdir << ' ' << speed << std::endl;
     }
 
     // time t
