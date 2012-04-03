@@ -56,8 +56,8 @@ class Weapon(object):
   def _firetestcoords(self, arenawidth, arenaheight):
     # TODO: randomize aim a bit, have weapons with better accuracy
     a = self.aim
-    x = self.bot.x
-    y = self.bot.y
+    x = self.bot.get('x')
+    y = self.bot.get('y')
     l = max(arenawidth, arenaheight) * 2
     x2 = int(round(x + l * math.cos(a)))
     y2 = int(round(y + l * math.sin(a)))
@@ -70,7 +70,7 @@ class Weapon(object):
       for obstacle in obstacles:
         if obstacle.occupies(coord[0], coord[1]): return ('obstacle', obstacle, coord[0], coord[1], coords)
       for enemy in bot.enemies:
-        if enemy.x == coord[0] and enemy.y == coord[1]: return ('enemy', enemy, coord[0], coord[1], coords)
+        if enemy.get('x') == coord[0] and enemy.get('y') == coord[1]: return ('enemy', enemy, coord[0], coord[1], coords)
     return ('none', None, x2, y2, coords)
 
 class Bot(object):
@@ -84,28 +84,47 @@ class Bot(object):
     self.language = dbbot[5]
     self.path = dbbot[6]
     self.program = BotProgram.open(dbbot[6], dbbot[5])
-    self.x = 0
-    self.y = 0
-    self.max_energy = 25
-    self.energy = 25
-    self.condition = 1.0
-    self.speed = 1.0
-    self.scanning_range = 12
-    self.dir = 'n'
-    self.state = 'move'
     self.weapons = [ Weapon(self) ]
+    self.data = {}
+    self.set('x', 0, True)
+    self.set('y', 0, True)
+    self.set('max_energy', 25, True)
+    self.set('energy', 25, True)
+    self.set('condition', 1.0, True)
+    self.set('speed', 1.0, True)
+    self.set('scanning_range', 12, True)
+    self.set('dir', 'n', True)
+    self.set('state', 'move', True)
 
   def in_range(self, other):
     """ Test if an enemy is in scanning range of this bot. """
     # TODO: this could be better optimized.
-    d = math.sqrt( math.pow(self.x - other.x, 2) + math.pow(self.y - other.y, 2) )
-    return d <= self.scanning_range
+    d = math.sqrt( math.pow(self.get('x') - other.get('x'), 2) + math.pow(self.get('y') - other.get('y'), 2) )
+    return d <= self.get('scanning_range')
 
   def damage(self, amount):
-    self.condition -= amount
+    self.set('condition', self.get('condition') - amount)
 
   def is_alive(self):
-    return self.condition > 0.0
+    return self.get('condition') > 0.0
+
+  def get(self, key, dflt=0):
+    if not key in self.data: return dflt
+    return self.data[key][0]
+  
+  def set(self, key, value, initialval=False):
+    if not key in self.data: self.data[key] = []
+    self.data[key].insert(0, value)
+    if initialval: self.data[key].insert(0, value)
+
+  def diffs(self):
+    d = {}
+    for key in self.data:
+      if len(self.data[key]) > 1:
+        v = self.data[key][0]
+        self.data[key] = [ v ]
+        d[key] = v
+    return d
 
 class Obstacle(object):
 
@@ -118,8 +137,8 @@ class Obstacle(object):
   def in_range(self, bot):
     """ Test if this obstacle is in scanning range of a bot. """
     # TODO: this could be better optimized.
-    d = math.sqrt( math.pow(self.x - bot.x, 2) + math.pow(self.y - bot.y, 2) )
-    return d <= (bot.scanning_range + self.r)
+    d = math.sqrt( math.pow(self.x - bot.get('x'), 2) + math.pow(self.y - bot.get('y'), 2) )
+    return d <= (bot.get('scanning_range') + self.r)
 
   def occupies(self, x, y):
     """ Test if this obstacle occupies grid location x,y. """
@@ -219,32 +238,24 @@ if __name__ == '__main__':
     for bot in bots:
       good = False
       while not good:
-        bot.x = random.randint(0, arenawidth)
-        bot.y = random.randint(0, arenaheight)
+        bot.set('x', random.randint(0, arenawidth))
+        bot.set('y', random.randint(0, arenaheight))
         good = True
         for obstacle in obstacles:
-          if obstacle.occupies(bot.x, bot.y):
+          if obstacle.occupies(bot.get('x'), bot.get('y')):
             good = False
             break
         for enemy in bot.enemies:
-          if enemy.x == bot.x and enemy.y == bot.y:
+          if enemy.get('x') == bot.get('x') and enemy.get('y') == bot.get('y'):
             good = False
             break
-      streamadd(-1, 'bot', {
-        'id': bot.id,
-        'user': bot.uid,
-        'training': 1 if bot.training else 0,
-        'language': bot.language,
-        'x': bot.x,
-        'y': bot.y,
-        'max_energy': bot.max_energy,
-        'energy': bot.energy,
-        'condition': bot.condition,
-        'speed': bot.speed,
-        'scanning_range': bot.scanning_range,
-        'dir': bot.dir,
-        'state': bot.state
-      })
+      args = bot.diffs()
+      if len(args):
+        args['id'] = bot.id
+        args['user'] = bot.uid
+        args['training'] = 1 if bot.training else 0
+        args['language'] = bot.language
+        streamadd(-1, 'bot', args)
 
     # Run the arena.
     for t in range(arenaduration):
@@ -277,25 +288,20 @@ if __name__ == '__main__':
               streamadd(t, 'error', { 'bot': bot.id, 'message': e.message, 'line': e.line, 'column': e.column})
 
         # Invoke stateChange().
-        try: bot.state = bot.program.cmd_state_change()
+        try: bot.set('state', bot.program.cmd_state_change())
         except BotProgram.BotProgramException as e:
           streamadd(t, 'error', { 'bot': bot.id, 'message': e.message, 'line': e.line, 'column': e.column})
-          bot.state = 'stop'
+          bot.set('state', 'stop')
 
-        streamadd(t, 'bot', {
-          'id': bot.id,
-          'x': bot.x,
-          'y': bot.y,
-          'energy': bot.energy,
-          'condition': bot.condition,
-          'speed': bot.speed,
-          'dir': bot.dir,
-          'state': bot.state
-        })
+        # If bot values changed, output them.
+        args = bot.diffs()
+        if len(args):
+          args['id'] = bot.id
+          streamadd(t, 'bot', args)
 
       # Everybody who's firing, aim.
       for bot in bots:
-        if bot.state in ('attack', 'attack+move'):
+        if bot.get('state') in ('attack', 'attack+move'):
           for weapon in bot.weapons:
             try: weapon.aim = bot.program.cmd_aim(weapon)
             except BotProgram.BotProgramException as e:
@@ -305,28 +311,33 @@ if __name__ == '__main__':
 
       # Everybody who's moving, move.
       for bot in bots:
-        if bot.state in ('move', 'attack+move', 'defend+move'):
+        if bot.get('state') in ('move', 'attack+move', 'defend+move'):
 
           # Change bot direction.
-          try: bot.dir, bot.speed = bot.program.cmd_move()
+          try:
+            dir, speed = bot.program.cmd_move()
+            bot.set('dir', dir)
+            bot.set('speed', speed)
           except BotProgram.BotProgramException as e:
             streamadd(t, 'error', { 'bot': bot.id, 'message': e.message, 'line': e.line, 'column': e.column})
-            bot.dir = 'n'
-            bot.speed = 0.0
-          if bot.dir == 'n': d = (0, 0-bot.speed)
-          elif bot.dir == 'ne': d = (bot.speed, 0-bot.speed)
-          elif bot.dir == 'e': d = (bot.speed, 0)
-          elif bot.dir == 'se': d = (bot.speed, bot.speed)
-          elif bot.dir == 's': d = (0, bot.speed)
-          elif bot.dir == 'sw': d = (0-bot.speed, bot.speed)
-          elif bot.dir == 'w': d = (0-bot.speed, 0)
-          elif bot.dir == 'nw': d = (0-bot.speed, 0-bot.speed)
+            bot.set('dir', 'n')
+            bot.set('speed', 0.0)
+          dir = bot.get('dir')
+          speed = bot.get('speed')
+          if dir == 'n': d = (0, 0-speed)
+          elif dir == 'ne': d = (speed, 0-speed)
+          elif dir == 'e': d = (speed, 0)
+          elif dir == 'se': d = (speed, speed)
+          elif dir == 's': d = (0, speed)
+          elif dir == 'sw': d = (0-speed, speed)
+          elif dir == 'w': d = (0-speed, 0)
+          elif dir == 'nw': d = (0-speed, 0-speed)
           else: d = (0, 0)
           d = ( int(math.floor(d[0])), int(math.floor(d[1])) )
 
           # find desired new location.
-          nx = (bot.x + d[0]) % arenawidth
-          ny = (bot.y + d[1]) % arenaheight
+          nx = (bot.get('x') + d[0]) % arenawidth
+          ny = (bot.get('y') + d[1]) % arenaheight
           collision = False
 
           # Check for collisions with obstacles.
@@ -338,7 +349,7 @@ if __name__ == '__main__':
 
           # Check for collisions with enemies.
           for enemy in bot.enemies:
-            if nx == enemy.x and ny == enemy.y:
+            if nx == enemy.get('x') and ny == enemy.get('y'):
               enemy.damage(0.1)
               bot.damage(0.1)
               collision = True
@@ -346,31 +357,31 @@ if __name__ == '__main__':
 
           # Move to new location if bot didn't smash into something.
           if not collision:
-            bot.x = nx
-            bot.y = ny
-            streamadd(t, 'move', { 'bot': bot.id, 'x': bot.x, 'y': bot.y })
+            bot.set('x', nx)
+            bot.set('y', ny)
+            streamadd(t, 'move', { 'bot': bot.id, 'x': bot.get('x'), 'y': bot.get('y') })
 
       # Resolve combat.
       shots = []
       for bot in bots:
-        if bot.state in ('attack', 'attack+move'):
+        if bot.get('state') in ('attack', 'attack+move'):
           for weapon in bot.weapons:
             targettype, target, endx, endy, coords = weapon.fire(obstacles, arenawidth, arenaheight)
             shots.append(coords)
             if targettype == 'enemy':
               damage = 0.3
-              if target.state == 'defend': damage = 0.1
-              if target.state == 'defend+move': damage = 0.2
+              if target.get('state') == 'defend': damage = 0.1
+              elif target.get('state') == 'defend+move': damage = 0.2
               target.damage(damage)
               streamadd(t, 'fire', {
                 'bot': bot.id,
                 'target_type': targettype,
                 'enemy': target.id,
-                'x': target.x,
-                'y': target.y,
+                'x': target.get('x'),
+                'y': target.get('y'),
                 'damage': damage
               })
-              log("bot %d shot bot %d at (%d,%d) for damage %f" % (bot.id, target.id, target.x, target.y, damage))
+              log("bot %d shot bot %d at (%d,%d) for damage %f" % (bot.id, target.id, target.get('x'), target.get('y'), damage))
               # TODO: notify target that it was hit
               # TODO: notify bot that it made a hit
               # TODO: notify other bots in range about the hit
@@ -433,7 +444,7 @@ if __name__ == '__main__':
           for obstacle in obstacles:
             if obstacle.occupies(x, y): v = '*'
           for bot in bots:
-            if bot.x == x and bot.y == y: v = str(bot.id)
+            if bot.get('x') == x and bot.get('y') == y: v = str(bot.id)
           line += v
         log('|' + line + '|')
       log('-' * (arenawidth+2))

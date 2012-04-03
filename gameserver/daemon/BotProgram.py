@@ -131,7 +131,7 @@ class BotProgram(threading.Thread):
   def cmd_enemy(self, e, inrange):
     return self.write_cmd(
       'enemy %d %d %d %f %f %f %d' %
-      (e.id, e.x, e.y, e.energy, e.condition, e.speed, 1 if inrange else 0),
+      (e.id, e.get('x'), e.get('y'), e.get('energy'), e.get('condition'), e.get('speed'), 1 if inrange else 0),
       printcmd = True
     )
 
@@ -144,7 +144,7 @@ class BotProgram(threading.Thread):
   def cmd_bot(self, b):
     return self.write_cmd(
       'bot %d %d %d %f %f %f %d' %
-      (b.id, b.x, b.y, b.energy, b.condition, b.speed, b.id),
+      (b.id, b.get('x'), b.get('y'), b.get('energy'), b.get('condition'), b.get('speed'), b.id),
       printcmd = True
     )
 
