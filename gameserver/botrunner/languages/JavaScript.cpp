@@ -120,6 +120,42 @@ class JavaScript : public BotLanguage {
         throw BotRunnerException(msg);
       }
       moveImpl = Persistent<Value>::New(func);
+
+      // Optional collisionWithObstacle() function.
+      func = (*bot)->Get(String::New("collisionWithObstacle"));
+      if (func->IsFunction()) {
+        collisionObstacleImpl = Persistent<Value>::New(func);
+      }
+      else {
+        collisionObstacleImpl = Persistent<Value>::New(Undefined());
+      }
+
+      // Optional collisionWithBot() function.
+      func = (*bot)->Get(String::New("collisionWithBot"));
+      if (func->IsFunction()) {
+        collisionBotImpl = Persistent<Value>::New(func);
+      }
+      else {
+        collisionBotImpl = Persistent<Value>::New(Undefined());
+      }
+
+      // Optional shotFiredHitObstacle() function.
+      func = (*bot)->Get(String::New("shotFiredHitObstacle"));
+      if (func->IsFunction()) {
+        shotFiredObstacleImpl = Persistent<Value>::New(func);
+      }
+      else {
+        shotFiredObstacleImpl = Persistent<Value>::New(Undefined());
+      }
+
+      // Optional shotFiredHitBot() function.
+      func = (*bot)->Get(String::New("shotFiredHitBot"));
+      if (func->IsFunction()) {
+        shotFiredBotImpl = Persistent<Value>::New(func);
+      }
+      else {
+        shotFiredBotImpl = Persistent<Value>::New(Undefined());
+      }
     }
 
     void stateChange(const Arena &arena, std::stringstream &rval) {
@@ -185,6 +221,78 @@ class JavaScript : public BotLanguage {
       rval = result->ToNumber()->Value();
     }
 
+    void collisionWithObstacle(const Arena &arena, bool self, const Bot &bot, const Obstacle &target, int x, int y, double damage) {
+      if (collisionObstacleImpl->IsUndefined()) {
+        return;
+      }
+      TryCatch exception;
+      HandleScope handle_scope;
+      Handle<Object> collidebot, selfbot, obstacle;
+      prepareObstacle(target, obstacle);
+      prepareBot(bot, collidebot);
+      prepareBot(arena.bot, selfbot);
+      Handle<Value> args[7] = {
+        arenaObject, Boolean::New(self), collidebot, obstacle,
+        Integer::New(x), Integer::New(y), Number::New(damage)
+      };
+      Function::Cast(*collisionObstacleImpl)->Call(selfbot, 7, args);
+      exception.Reset();
+    }
+
+    void collisionWithBot(const Arena &arena, bool self, const Bot &bot, const Bot &target, int x, int y, double damage) {
+      if (collisionBotImpl->IsUndefined()) {
+        return;
+      }
+      TryCatch exception;
+      HandleScope handle_scope;
+      Handle<Object> collidebot, selfbot, targetbot;
+      prepareBot(target, targetbot);
+      prepareBot(bot, collidebot);
+      prepareBot(arena.bot, selfbot);
+      Handle<Value> args[7] = {
+        arenaObject, Boolean::New(self), collidebot, targetbot,
+        Integer::New(x), Integer::New(y), Number::New(damage)
+      };
+      Function::Cast(*collisionBotImpl)->Call(selfbot, 7, args);
+      exception.Reset();
+    }
+
+    void shotFiredHitObstacle(const Arena &arena, bool self, const Bot &bot, const Obstacle &target, int x, int y, double damage) {
+      if (shotFiredObstacleImpl->IsUndefined()) {
+        return;
+      }
+      TryCatch exception;
+      HandleScope handle_scope;
+      Handle<Object> firingbot, selfbot, obstacle;
+      prepareObstacle(target, obstacle);
+      prepareBot(bot, firingbot);
+      prepareBot(arena.bot, selfbot);
+      Handle<Value> args[7] = {
+        arenaObject, Boolean::New(self), firingbot, obstacle,
+        Integer::New(x), Integer::New(y), Number::New(damage)
+      };
+      Function::Cast(*shotFiredObstacleImpl)->Call(selfbot, 7, args);
+      exception.Reset();
+    }
+
+    void shotFiredHitBot(const Arena &arena, bool self, const Bot &bot, const Bot &target, int x, int y, double damage) {
+      if (shotFiredBotImpl->IsUndefined()) {
+        return;
+      }
+      TryCatch exception;
+      HandleScope handle_scope;
+      Handle<Object> firingbot, selfbot, targetbot;
+      prepareBot(target, targetbot);
+      prepareBot(bot, firingbot);
+      prepareBot(arena.bot, selfbot);
+      Handle<Value> args[7] = {
+        arenaObject, Boolean::New(self), firingbot, targetbot,
+        Integer::New(x), Integer::New(y), Number::New(damage)
+      };
+      Function::Cast(*shotFiredBotImpl)->Call(selfbot, 7, args);
+      exception.Reset();
+    }
+
     ~JavaScript(void) {
       stateChangeImpl.Dispose();
       aimImpl.Dispose();
@@ -198,6 +306,8 @@ class JavaScript : public BotLanguage {
     Persistent<Context> context;
     Persistent<Object> arenaObject;
     Persistent<Value> stateChangeImpl, aimImpl, moveImpl;
+    Persistent<Value> collisionObstacleImpl, collisionBotImpl;
+    Persistent<Value> shotFiredObstacleImpl, shotFiredBotImpl;
 
     void prepareWeapon(const Weapon &cppweapon, Handle<Object> jsweapon) {
       jsweapon->Set(String::New("id"), Integer::New(cppweapon.id));

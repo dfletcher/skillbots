@@ -9,8 +9,10 @@
 
 #include <string>
 #include <sstream>
+#include <Bot.hpp>
 #include <Arena.hpp>
 #include <Weapon.hpp>
+#include <Obstacle.hpp>
 
 class BotLanguage {
 
@@ -23,6 +25,14 @@ class BotLanguage {
     virtual void move(const Arena&, std::stringstream &rvaldir, double &rvalspeed)=0;
 
     virtual void aim(const Arena&, const Weapon&, double &rval)=0;
+
+    virtual void collisionWithObstacle(const Arena&, bool self, const Bot&, const Obstacle&, int x, int y, double damage)=0;
+
+    virtual void collisionWithBot(const Arena&, bool self, const Bot&, const Bot&, int x, int y, double damage)=0;
+
+    virtual void shotFiredHitObstacle(const Arena&, bool self, const Bot&, const Obstacle&, int x, int y, double damage)=0;
+
+    virtual void shotFiredHitBot(const Arena&, bool self, const Bot&, const Bot&, int x, int y, double damage)=0;
 
     virtual ~BotLanguage(void);
 };

@@ -16,6 +16,10 @@ std::string cmd_init("init");
 std::string cmd_state_change("state-change");
 std::string cmd_aim("aim");
 std::string cmd_move("move");
+std::string cmd_collision_obstacle("collision-with-obstacle");
+std::string cmd_collision_bot("collision-with-bot");
+std::string cmd_shot_fired_obstacle("shot-fired-obstacle");
+std::string cmd_shot_fired_bot("shot-fired-bot");
 std::string cmd_time("time");
 std::string cmd_obstacle("obstacle");
 std::string cmd_obstacle_inrange("obstacle-in-range");
@@ -105,17 +109,17 @@ int BotRunner::run(BotLanguage &language, int argc, char* argv[]) {
       }
       catch (BotRunnerException &e) {
         std::cerr << e.line << ' ' << e.column << ' ' << e.msg << '.' << std::endl;
-        exitval = 1;
+        exitval = 4;
         break;
       }
       catch (std::exception &e) {
         std::cerr << "0 0 " << e.what() << '.' << std::endl;
-        exitval = 2;
+        exitval = 5;
         break;
       }
       catch (...) {
         std::cerr << "0 0 " << "Unknown exception occurred in language.stateChange()." << std::endl;
-        exitval = 3;
+        exitval = 6;
         break;
       }
       const char *cstate = state.str().c_str();
@@ -126,7 +130,7 @@ int BotRunner::run(BotLanguage &language, int argc, char* argv[]) {
         (state_defend.compare(cstate) != 0) &&
         (state_defend_move.compare(cstate) != 0)) {
         std::cerr << "0 0 FATAL: broken stateChange() implementation, returned unknown state, should be one of: (stop,move,attack,attack+move,defend,defend+move) but received: " << state << std::endl;
-        exitval = 5;
+        exitval = 7;
         break;
       }
       std::cout << cstate << std::endl;
@@ -140,17 +144,17 @@ int BotRunner::run(BotLanguage &language, int argc, char* argv[]) {
       }
       catch (BotRunnerException &e) {
         std::cerr << e.line << ' ' << e.column << ' ' << e.msg << '.' << std::endl;
-        exitval = 1;
+        exitval = 8;
         break;
       }
       catch (std::exception &e) {
         std::cerr << "0 0 " << e.what() << '.' << std::endl;
-        exitval = 2;
+        exitval = 9;
         break;
       }
       catch (...) {
         std::cerr << "0 0 " << "Unknown exception occurred in language.aim()." << std::endl;
-        exitval = 3;
+        exitval = 10;
         break;
       }
       std::cout << rval << std::endl;
@@ -165,17 +169,17 @@ int BotRunner::run(BotLanguage &language, int argc, char* argv[]) {
       }
       catch (BotRunnerException &e) {
         std::cerr << e.line << ' ' << e.column << ' ' << e.msg << '.' << std::endl;
-        exitval = 1;
+        exitval = 11;
         break;
       }
       catch (std::exception &e) {
         std::cerr << "0 0 " << e.what() << '.' << std::endl;
-        exitval = 2;
+        exitval = 12;
         break;
       }
       catch (...) {
         std::cerr << "0 0 " << "Unknown exception occurred in language.move()." << std::endl;
-        exitval = 3;
+        exitval = 13;
         break;
       }
       const char *cdir = dir.str().c_str();
@@ -188,10 +192,136 @@ int BotRunner::run(BotLanguage &language, int argc, char* argv[]) {
         (dir_w.compare(cdir) != 0) &&
         (dir_nw.compare(cdir) != 0)) {
         std::cerr << "0 0 FATAL: broken move() implementation, first element of returned array returned unknown direction should be one of: (n,ne,e,se,s,sw,w,nw) but received: " << dir << std::endl;
-        exitval = 10;
+        exitval = 14;
         break;
       }
       std::cout << cdir << ' ' << speed << std::endl;
+    }
+
+    else if (cmd_collision_obstacle.compare(linevec[0]) == 0) {
+      bool self = Utility::str2int(linevec[1]) != 0;
+      int botid = Utility::str2int(linevec[2]);
+      int obstacleid = Utility::str2int(linevec[3]);
+      int x = Utility::str2int(linevec[4]);
+      int y = Utility::str2int(linevec[5]);
+      double dmg = Utility::str2double(linevec[6]);
+      try {
+        language.collisionWithObstacle(
+          arena, self, self ? arena.bot : arena.enemies[botid],
+          arena.obstacles[obstacleid], x, y, dmg
+        );
+      }
+      catch (BotRunnerException &e) {
+        std::cerr << e.line << ' ' << e.column << ' ' << e.msg << '.' << std::endl;
+        exitval = 15;
+        break;
+      }
+      catch (std::exception &e) {
+        std::cerr << "0 0 " << e.what() << '.' << std::endl;
+        exitval = 16;
+        break;
+      }
+      catch (...) {
+        std::cerr << "0 0 " << "Unknown exception occurred in language.move()." << std::endl;
+        exitval = 17;
+        break;
+      }
+      std::cout << "ok" << std::endl;
+    }
+
+    else if (cmd_collision_obstacle.compare(linevec[0]) == 0) {
+      bool self = Utility::str2int(linevec[1]) != 0;
+      int botid = Utility::str2int(linevec[2]);
+      int targetid = Utility::str2int(linevec[3]);
+      int x = Utility::str2int(linevec[4]);
+      int y = Utility::str2int(linevec[5]);
+      double dmg = Utility::str2double(linevec[6]);
+      try {
+        language.collisionWithBot(
+          arena, self, self ? arena.bot : arena.enemies[botid],
+          (targetid == arena.bot.id) ? arena.bot : arena.enemies[targetid],
+          x, y, dmg
+        );
+      }
+      catch (BotRunnerException &e) {
+        std::cerr << e.line << ' ' << e.column << ' ' << e.msg << '.' << std::endl;
+        exitval = 18;
+        break;
+      }
+      catch (std::exception &e) {
+        std::cerr << "0 0 " << e.what() << '.' << std::endl;
+        exitval = 19;
+        break;
+      }
+      catch (...) {
+        std::cerr << "0 0 " << "Unknown exception occurred in language.move()." << std::endl;
+        exitval = 20;
+        break;
+      }
+      std::cout << "ok" << std::endl;
+    }
+
+    else if (cmd_shot_fired_obstacle.compare(linevec[0]) == 0) {
+      bool self = Utility::str2int(linevec[1]) != 0;
+      int botid = Utility::str2int(linevec[2]);
+      int obstacleid = Utility::str2int(linevec[3]);
+      int x = Utility::str2int(linevec[4]);
+      int y = Utility::str2int(linevec[5]);
+      double dmg = Utility::str2double(linevec[6]);
+      try {
+        language.shotFiredHitObstacle(
+          arena, self, self ? arena.bot : arena.enemies[botid],
+          arena.obstacles[obstacleid], x, y, dmg
+        );
+      }
+      catch (BotRunnerException &e) {
+        std::cerr << e.line << ' ' << e.column << ' ' << e.msg << '.' << std::endl;
+        exitval = 21;
+        break;
+      }
+      catch (std::exception &e) {
+        std::cerr << "0 0 " << e.what() << '.' << std::endl;
+        exitval = 22;
+        break;
+      }
+      catch (...) {
+        std::cerr << "0 0 " << "Unknown exception occurred in language.move()." << std::endl;
+        exitval = 23;
+        break;
+      }
+      std::cout << "ok" << std::endl;
+    }
+
+    else if (cmd_shot_fired_bot.compare(linevec[0]) == 0) {
+      bool self = Utility::str2int(linevec[1]) != 0;
+      int botid = Utility::str2int(linevec[2]);
+      int targetid = Utility::str2int(linevec[3]);
+      int x = Utility::str2int(linevec[4]);
+      int y = Utility::str2int(linevec[5]);
+      double dmg = Utility::str2double(linevec[6]);
+      try {
+        language.shotFiredHitBot(
+          arena, self, self ? arena.bot : arena.enemies[botid],
+          (targetid == arena.bot.id) ? arena.bot : arena.enemies[targetid],
+          x, y, dmg
+        );
+      }
+      catch (BotRunnerException &e) {
+        std::cerr << e.line << ' ' << e.column << ' ' << e.msg << '.' << std::endl;
+        exitval = 24;
+        break;
+      }
+      catch (std::exception &e) {
+        std::cerr << "0 0 " << e.what() << '.' << std::endl;
+        exitval = 25;
+        break;
+      }
+      catch (...) {
+        std::cerr << "0 0 " << "Unknown exception occurred in language.move()." << std::endl;
+        exitval = 26;
+        break;
+      }
+      std::cout << "ok" << std::endl;
     }
 
     // time t

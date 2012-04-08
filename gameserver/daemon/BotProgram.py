@@ -148,6 +148,30 @@ class BotProgram(threading.Thread):
       printcmd = True
     )
 
+  def cmd_collision_with_obstacle(self, isself, bot, obstacle, x, y, dmg):
+    return self.write_cmd(
+      'collision-with-obstacle %d %d %d %d %d %f' %
+      (1 if isself else 0, bot.id, obstacle.id, x, y, dmg)
+    )
+
+  def cmd_collision_with_bot(self, isself, bot, other, x, y, dmg):
+    return self.write_cmd(
+      'collision-with-bot %d %d %d %d %d %f' %
+      (1 if isself else 0, bot.id, other.id, x, y, dmg)
+    )
+
+  def cmd_shot_fired_hit_obstacle(self, isself, bot, obstacle, x, y, dmg):
+    return self.write_cmd(
+      'shot-fired-obstacle %d %d %d %d %d %f' %
+      (1 if isself else 0, bot.id, obstacle.id, x, y, dmg)
+    )
+
+  def cmd_shot_fired_hit_bot(self, isself, bot, other, x, y, dmg):
+    return self.write_cmd(
+      'shot-fired-bot %d %d %d %d %d %f' %
+      (1 if isself else 0, bot.id, other.id, x, y, dmg)
+    )
+
   def cmd_state_change(self):
     return self.read_cmd('state-change', 'stop')
 
