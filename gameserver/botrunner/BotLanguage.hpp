@@ -26,13 +26,13 @@ class BotLanguage {
 
     virtual void aim(const Arena&, const Weapon&, double &rval)=0;
 
-    virtual void collisionWithObstacle(const Arena&, bool self, const Bot&, const Obstacle&, int x, int y, double damage)=0;
+    virtual void collisionWithObstacle(const Arena&, bool self, const Bot&, const Obstacle&, double angle, double damage)=0;
 
-    virtual void collisionWithBot(const Arena&, bool self, const Bot&, const Bot&, int x, int y, double damage)=0;
+    virtual void collisionWithBot(const Arena&, bool self, const Bot&, const Bot&, double angle, double damage)=0;
 
-    virtual void shotFiredHitObstacle(const Arena&, bool self, const Bot&, const Obstacle&, int x, int y, double damage)=0;
+    virtual void shotFiredHitObstacle(const Arena&, bool self, const Bot&, const Obstacle&, double angle, double damage)=0;
 
-    virtual void shotFiredHitBot(const Arena&, bool self, const Bot&, const Bot&, int x, int y, double damage)=0;
+    virtual void shotFiredHitBot(const Arena&, bool self, const Bot&, const Bot&, double angle, double damage)=0;
 
     virtual ~BotLanguage(void);
 };

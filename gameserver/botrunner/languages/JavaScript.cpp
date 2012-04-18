@@ -221,7 +221,7 @@ class JavaScript : public BotLanguage {
       rval = result->ToNumber()->Value();
     }
 
-    void collisionWithObstacle(const Arena &arena, bool self, const Bot &bot, const Obstacle &target, int x, int y, double damage) {
+    void collisionWithObstacle(const Arena &arena, bool self, const Bot &bot, const Obstacle &target, double angle, double damage) {
       if (collisionObstacleImpl->IsUndefined()) {
         return;
       }
@@ -231,15 +231,15 @@ class JavaScript : public BotLanguage {
       prepareObstacle(target, obstacle);
       prepareBot(bot, collidebot);
       prepareBot(arena.bot, selfbot);
-      Handle<Value> args[7] = {
-        arenaObject, Boolean::New(self), collidebot, obstacle,
-        Integer::New(x), Integer::New(y), Number::New(damage)
+      Handle<Value> args[6] = {
+        arenaObject, Boolean::New(self), collidebot,
+        obstacle, Number::New(angle), Number::New(damage)
       };
-      Function::Cast(*collisionObstacleImpl)->Call(selfbot, 7, args);
+      Function::Cast(*collisionObstacleImpl)->Call(selfbot, 6, args);
       exception.Reset();
     }
 
-    void collisionWithBot(const Arena &arena, bool self, const Bot &bot, const Bot &target, int x, int y, double damage) {
+    void collisionWithBot(const Arena &arena, bool self, const Bot &bot, const Bot &target, double angle, double damage) {
       if (collisionBotImpl->IsUndefined()) {
         return;
       }
@@ -249,15 +249,15 @@ class JavaScript : public BotLanguage {
       prepareBot(target, targetbot);
       prepareBot(bot, collidebot);
       prepareBot(arena.bot, selfbot);
-      Handle<Value> args[7] = {
-        arenaObject, Boolean::New(self), collidebot, targetbot,
-        Integer::New(x), Integer::New(y), Number::New(damage)
+      Handle<Value> args[6] = {
+        arenaObject, Boolean::New(self), collidebot,
+        targetbot, Number::New(angle), Number::New(damage)
       };
-      Function::Cast(*collisionBotImpl)->Call(selfbot, 7, args);
+      Function::Cast(*collisionBotImpl)->Call(selfbot, 6, args);
       exception.Reset();
     }
 
-    void shotFiredHitObstacle(const Arena &arena, bool self, const Bot &bot, const Obstacle &target, int x, int y, double damage) {
+    void shotFiredHitObstacle(const Arena &arena, bool self, const Bot &bot, const Obstacle &target, double angle, double damage) {
       if (shotFiredObstacleImpl->IsUndefined()) {
         return;
       }
@@ -267,15 +267,15 @@ class JavaScript : public BotLanguage {
       prepareObstacle(target, obstacle);
       prepareBot(bot, firingbot);
       prepareBot(arena.bot, selfbot);
-      Handle<Value> args[7] = {
-        arenaObject, Boolean::New(self), firingbot, obstacle,
-        Integer::New(x), Integer::New(y), Number::New(damage)
+      Handle<Value> args[6] = {
+        arenaObject, Boolean::New(self), firingbot,
+        obstacle, Number::New(angle), Number::New(damage)
       };
-      Function::Cast(*shotFiredObstacleImpl)->Call(selfbot, 7, args);
+      Function::Cast(*shotFiredObstacleImpl)->Call(selfbot, 6, args);
       exception.Reset();
     }
 
-    void shotFiredHitBot(const Arena &arena, bool self, const Bot &bot, const Bot &target, int x, int y, double damage) {
+    void shotFiredHitBot(const Arena &arena, bool self, const Bot &bot, const Bot &target, double angle, double damage) {
       if (shotFiredBotImpl->IsUndefined()) {
         return;
       }
@@ -286,8 +286,8 @@ class JavaScript : public BotLanguage {
       prepareBot(bot, firingbot);
       prepareBot(arena.bot, selfbot);
       Handle<Value> args[7] = {
-        arenaObject, Boolean::New(self), firingbot, targetbot,
-        Integer::New(x), Integer::New(y), Number::New(damage)
+        arenaObject, Boolean::New(self), firingbot,
+        targetbot, Number::New(angle), Number::New(damage)
       };
       Function::Cast(*shotFiredBotImpl)->Call(selfbot, 7, args);
       exception.Reset();
