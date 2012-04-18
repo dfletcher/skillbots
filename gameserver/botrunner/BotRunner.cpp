@@ -261,11 +261,10 @@ int BotRunner::run(BotLanguage &language, int argc, char* argv[]) {
       int botid = Utility::str2int(linevec[2]);
       int obstacleid = Utility::str2int(linevec[3]);
       double a = Utility::str2double(linevec[4]);
-      double dmg = Utility::str2double(linevec[5]);
       try {
         language.shotFiredHitObstacle(
           arena, self, self ? arena.bot : arena.enemies[botid],
-          arena.obstacles[obstacleid], a, dmg
+          arena.obstacles[obstacleid], a
         );
       }
       catch (BotRunnerException &e) {

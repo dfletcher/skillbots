@@ -257,7 +257,7 @@ class JavaScript : public BotLanguage {
       exception.Reset();
     }
 
-    void shotFiredHitObstacle(const Arena &arena, bool self, const Bot &bot, const Obstacle &target, double angle, double damage) {
+    void shotFiredHitObstacle(const Arena &arena, bool self, const Bot &bot, const Obstacle &target, double angle) {
       if (shotFiredObstacleImpl->IsUndefined()) {
         return;
       }
@@ -274,11 +274,11 @@ class JavaScript : public BotLanguage {
         _firingbot = firingbot;
       }
       prepareBot(arena.bot, selfbot);
-      Handle<Value> args[6] = {
+      Handle<Value> args[5] = {
         arenaObject, Boolean::New(self), _firingbot,
-        obstacle, Number::New(angle), Number::New(damage)
+        obstacle, Number::New(angle)
       };
-      Function::Cast(*shotFiredObstacleImpl)->Call(selfbot, 6, args);
+      Function::Cast(*shotFiredObstacleImpl)->Call(selfbot, 5, args);
       exception.Reset();
     }
 
@@ -299,11 +299,11 @@ class JavaScript : public BotLanguage {
         _firingbot = firingbot;
       }
       prepareBot(arena.bot, selfbot);
-      Handle<Value> args[7] = {
+      Handle<Value> args[6] = {
         arenaObject, Boolean::New(self), _firingbot,
         targetbot, Number::New(angle), Number::New(damage)
       };
-      Function::Cast(*shotFiredBotImpl)->Call(selfbot, 7, args);
+      Function::Cast(*shotFiredBotImpl)->Call(selfbot, 6, args);
       exception.Reset();
     }
 
