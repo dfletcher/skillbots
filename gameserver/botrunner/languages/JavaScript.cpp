@@ -221,7 +221,7 @@ class JavaScript : public BotLanguage {
       rval = result->ToNumber()->Value();
     }
 
-    void collisionWithObstacle(const Arena &arena, bool self, const Bot &bot, const Obstacle &target, double angle, double damage) {
+    void collisionWithObstacle(const Arena &arena, bool self, const Bot &bot, const Obstacle &target, double damage) {
       if (collisionObstacleImpl->IsUndefined()) {
         return;
       }
@@ -231,15 +231,15 @@ class JavaScript : public BotLanguage {
       prepareObstacle(target, obstacle);
       prepareBot(bot, collidebot);
       prepareBot(arena.bot, selfbot);
-      Handle<Value> args[6] = {
+      Handle<Value> args[5] = {
         arenaObject, Boolean::New(self), collidebot,
-        obstacle, Number::New(angle), Number::New(damage)
+        obstacle, Number::New(damage)
       };
-      Function::Cast(*collisionObstacleImpl)->Call(selfbot, 6, args);
+      Function::Cast(*collisionObstacleImpl)->Call(selfbot, 5, args);
       exception.Reset();
     }
 
-    void collisionWithBot(const Arena &arena, bool self, const Bot &bot, const Bot &target, double angle, double damage) {
+    void collisionWithBot(const Arena &arena, bool self, const Bot &bot, const Bot &target, double damage) {
       if (collisionBotImpl->IsUndefined()) {
         return;
       }
@@ -249,11 +249,11 @@ class JavaScript : public BotLanguage {
       prepareBot(target, targetbot);
       prepareBot(bot, collidebot);
       prepareBot(arena.bot, selfbot);
-      Handle<Value> args[6] = {
+      Handle<Value> args[5] = {
         arenaObject, Boolean::New(self), collidebot,
-        targetbot, Number::New(angle), Number::New(damage)
+        targetbot, Number::New(damage)
       };
-      Function::Cast(*collisionBotImpl)->Call(selfbot, 6, args);
+      Function::Cast(*collisionBotImpl)->Call(selfbot, 5, args);
       exception.Reset();
     }
 
@@ -263,12 +263,19 @@ class JavaScript : public BotLanguage {
       }
       TryCatch exception;
       HandleScope handle_scope;
+      Handle<Value> _firingbot;
       Handle<Object> firingbot, selfbot, obstacle;
       prepareObstacle(target, obstacle);
-      prepareBot(bot, firingbot);
+      if (bot.id == 0) {
+        _firingbot = Null();
+      }
+      else {
+        prepareBot(bot, firingbot);
+        _firingbot = firingbot;
+      }
       prepareBot(arena.bot, selfbot);
       Handle<Value> args[6] = {
-        arenaObject, Boolean::New(self), firingbot,
+        arenaObject, Boolean::New(self), _firingbot,
         obstacle, Number::New(angle), Number::New(damage)
       };
       Function::Cast(*shotFiredObstacleImpl)->Call(selfbot, 6, args);
@@ -281,12 +288,19 @@ class JavaScript : public BotLanguage {
       }
       TryCatch exception;
       HandleScope handle_scope;
+      Handle<Value> _firingbot;
       Handle<Object> firingbot, selfbot, targetbot;
       prepareBot(target, targetbot);
-      prepareBot(bot, firingbot);
+      if (bot.id == 0) {
+        _firingbot = Null();
+      }
+      else {
+        prepareBot(bot, firingbot);
+        _firingbot = firingbot;
+      }
       prepareBot(arena.bot, selfbot);
       Handle<Value> args[7] = {
-        arenaObject, Boolean::New(self), firingbot,
+        arenaObject, Boolean::New(self), _firingbot,
         targetbot, Number::New(angle), Number::New(damage)
       };
       Function::Cast(*shotFiredBotImpl)->Call(selfbot, 7, args);
