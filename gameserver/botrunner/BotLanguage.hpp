@@ -103,9 +103,11 @@ class BotLanguage {
      *  @param self True if bot is the user's bot.
      *  @param obstacle Obstacle involved in the collision.
      *  @param other Other Bot involved in collision.
+     *  @param x Grid X where collision occurred.
+     *  @param y Grid Y where collision occurred.
      *  @param damage Damage the bot received.
      */
-    virtual void collisionWithObstacle(const Arena &arena, bool self, const Bot &bot, const Obstacle &obstacle, double damage)=0;
+    virtual void collisionWithObstacle(const Arena &arena, bool self, const Bot &bot, const Obstacle &obstacle, int x, int y, double damage)=0;
 
     /**
      *  Call the collisionWithBot() API function in the target language,
@@ -130,9 +132,11 @@ class BotLanguage {
      *  Implementations should pass NULL or similar sentinel parameter in this
      *  case.
      *  @param obstacle Obstacle hit by the shot.
+     *  @param x Grid X where shot struck.
+     *  @param y Grid Y where shot struck.
      *  @param angle Angle of the shot.
      */
-    virtual void shotFiredHitObstacle(const Arena &arena, bool self, const Bot &bot, const Obstacle &obstacle, double angle)=0;
+    virtual void shotFiredHitObstacle(const Arena &arena, bool self, const Bot &bot, const Obstacle &obstacle, int x, int y, double angle)=0;
 
     /**
      *  Call the shotFiredHitBot() API function in the target language,

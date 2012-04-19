@@ -221,7 +221,7 @@ class JavaScript : public BotLanguage {
       rval = result->ToNumber()->Value();
     }
 
-    void collisionWithObstacle(const Arena &arena, bool self, const Bot &bot, const Obstacle &target, double damage) {
+    void collisionWithObstacle(const Arena &arena, bool self, const Bot &bot, const Obstacle &target, int x, int y, double damage) {
       if (collisionObstacleImpl->IsUndefined()) {
         return;
       }
@@ -231,11 +231,11 @@ class JavaScript : public BotLanguage {
       prepareObstacle(target, obstacle);
       prepareBot(bot, collidebot);
       prepareBot(arena.bot, selfbot);
-      Handle<Value> args[5] = {
-        arenaObject, Boolean::New(self), collidebot,
-        obstacle, Number::New(damage)
+      Handle<Value> args[7] = {
+        arenaObject, Boolean::New(self), collidebot, obstacle,
+        Integer::New(x), Integer::New(y), Number::New(damage)
       };
-      Function::Cast(*collisionObstacleImpl)->Call(selfbot, 5, args);
+      Function::Cast(*collisionObstacleImpl)->Call(selfbot, 7, args);
       exception.Reset();
     }
 
@@ -257,7 +257,7 @@ class JavaScript : public BotLanguage {
       exception.Reset();
     }
 
-    void shotFiredHitObstacle(const Arena &arena, bool self, const Bot &bot, const Obstacle &target, double angle) {
+    void shotFiredHitObstacle(const Arena &arena, bool self, const Bot &bot, const Obstacle &target, int x, int y, double angle) {
       if (shotFiredObstacleImpl->IsUndefined()) {
         return;
       }
@@ -274,11 +274,11 @@ class JavaScript : public BotLanguage {
         _firingbot = firingbot;
       }
       prepareBot(arena.bot, selfbot);
-      Handle<Value> args[5] = {
-        arenaObject, Boolean::New(self), _firingbot,
-        obstacle, Number::New(angle)
+      Handle<Value> args[7] = {
+        arenaObject, Boolean::New(self), _firingbot, obstacle,
+        Integer::New(x), Integer::New(y), Number::New(angle)
       };
-      Function::Cast(*shotFiredObstacleImpl)->Call(selfbot, 5, args);
+      Function::Cast(*shotFiredObstacleImpl)->Call(selfbot, 7, args);
       exception.Reset();
     }
 

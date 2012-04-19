@@ -202,11 +202,13 @@ int BotRunner::run(BotLanguage &language, int argc, char* argv[]) {
       bool self = Utility::str2int(linevec[1]) != 0;
       int botid = Utility::str2int(linevec[2]);
       int obstacleid = Utility::str2int(linevec[3]);
-      double dmg = Utility::str2double(linevec[4]);
+      int x = Utility::str2int(linevec[4]);
+      int y = Utility::str2int(linevec[5]);
+      double dmg = Utility::str2double(linevec[6]);
       try {
         language.collisionWithObstacle(
           arena, self, self ? arena.bot : arena.enemies[botid],
-          arena.obstacles[obstacleid], dmg
+          arena.obstacles[obstacleid], x, y, dmg
         );
       }
       catch (BotRunnerException &e) {
@@ -260,11 +262,13 @@ int BotRunner::run(BotLanguage &language, int argc, char* argv[]) {
       bool self = Utility::str2int(linevec[1]) != 0;
       int botid = Utility::str2int(linevec[2]);
       int obstacleid = Utility::str2int(linevec[3]);
-      double a = Utility::str2double(linevec[4]);
+      int x = Utility::str2int(linevec[4]);
+      int y = Utility::str2int(linevec[5]);
+      double a = Utility::str2double(linevec[6]);
       try {
         language.shotFiredHitObstacle(
           arena, self, self ? arena.bot : arena.enemies[botid],
-          arena.obstacles[obstacleid], a
+          arena.obstacles[obstacleid], x, y, a
         );
       }
       catch (BotRunnerException &e) {
