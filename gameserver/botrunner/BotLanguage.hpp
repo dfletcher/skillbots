@@ -80,10 +80,10 @@ class BotLanguage {
      *  @param arena Arena where the game is taking place.
      *  @param rvaldir Output parameter. Implementations should << concat the
      *  direction value returned by move implementation.
-     *  @param rvalspeed Output parameter. Implementations should set this to the
-     *  speed value returned by move implementation.
+     *  @param rvalspeed Output parameter. Implementations should set this to
+     *  the speed value returned by move implementation.
      */
-    virtual void move(const Arena&, std::stringstream &rvaldir, double &rvalspeed)=0;
+    virtual void move(const Arena &arena, std::stringstream &rvaldir, double &rvalspeed)=0;
 
     /**
      *  Call the aim() API function in the target language. All parameters

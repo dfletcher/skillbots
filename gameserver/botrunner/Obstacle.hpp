@@ -11,7 +11,7 @@ class Obstacle {
   public:
     Obstacle(void);
     ~Obstacle(void);
-    int id, x, y, radius;
+    int id, x, y, w, h;
     bool inrange;
 };
 

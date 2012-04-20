@@ -332,7 +332,8 @@ int BotRunner::run(BotLanguage &language, int argc, char* argv[]) {
       arena.obstacles[id].id = id;
       arena.obstacles[id].x = Utility::str2int(linevec[2]);
       arena.obstacles[id].y = Utility::str2int(linevec[3]);
-      arena.obstacles[id].radius = Utility::str2int(linevec[4]);
+      arena.obstacles[id].w = Utility::str2int(linevec[4]);
+      arena.obstacles[id].h = Utility::str2int(linevec[5]);
       std::cout << "ok" << std::endl;
     }
 

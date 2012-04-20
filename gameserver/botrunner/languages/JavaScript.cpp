@@ -333,7 +333,8 @@ class JavaScript : public BotLanguage {
       jsobstacle->Set(String::New("id"), Integer::New(cppobstacle.id));
       jsobstacle->Set(String::New("x"), Integer::New(cppobstacle.x));
       jsobstacle->Set(String::New("y"), Integer::New(cppobstacle.y));
-      jsobstacle->Set(String::New("radius"), Integer::New(cppobstacle.radius));
+      jsobstacle->Set(String::New("w"), Integer::New(cppobstacle.w));
+      jsobstacle->Set(String::New("h"), Integer::New(cppobstacle.h));
     }
 
     void prepareBot(const Bot &cppbot, Handle<Object> jsbot) {
