@@ -94,7 +94,7 @@ int BotRunner::run(BotLanguage &language, int argc, char* argv[]) {
         break;
       }
       catch (...) {
-        std::cerr << "0 0 " << "Unknown exception occurred in language.init()." << std::endl;
+        std::cerr << "0 0 Unknown exception occurred in language.init()." << std::endl;
         exitval = 3;
         break;
       }
@@ -118,7 +118,7 @@ int BotRunner::run(BotLanguage &language, int argc, char* argv[]) {
         break;
       }
       catch (...) {
-        std::cerr << "0 0 " << "Unknown exception occurred in language.stateChange()." << std::endl;
+        std::cerr << "0 0 Unknown exception occurred in language.stateChange()." << std::endl;
         exitval = 6;
         break;
       }
@@ -153,7 +153,7 @@ int BotRunner::run(BotLanguage &language, int argc, char* argv[]) {
         break;
       }
       catch (...) {
-        std::cerr << "0 0 " << "Unknown exception occurred in language.aim()." << std::endl;
+        std::cerr << "0 0 Unknown exception occurred in language.aim()." << std::endl;
         exitval = 10;
         break;
       }
@@ -178,7 +178,7 @@ int BotRunner::run(BotLanguage &language, int argc, char* argv[]) {
         break;
       }
       catch (...) {
-        std::cerr << "0 0 " << "Unknown exception occurred in language.move()." << std::endl;
+        std::cerr << "0 0 Unknown exception occurred in language.move()." << std::endl;
         exitval = 13;
         break;
       }
@@ -222,7 +222,7 @@ int BotRunner::run(BotLanguage &language, int argc, char* argv[]) {
         break;
       }
       catch (...) {
-        std::cerr << "0 0 " << "Unknown exception occurred in language.move()." << std::endl;
+        std::cerr << "0 0 Unknown exception occurred in language.move()." << std::endl;
         exitval = 17;
         break;
       }
@@ -251,7 +251,7 @@ int BotRunner::run(BotLanguage &language, int argc, char* argv[]) {
         break;
       }
       catch (...) {
-        std::cerr << "0 0 " << "Unknown exception occurred in language.move()." << std::endl;
+        std::cerr << "0 0 Unknown exception occurred in language.move()." << std::endl;
         exitval = 20;
         break;
       }
@@ -282,7 +282,7 @@ int BotRunner::run(BotLanguage &language, int argc, char* argv[]) {
         break;
       }
       catch (...) {
-        std::cerr << "0 0 " << "Unknown exception occurred in language.move()." << std::endl;
+        std::cerr << "0 0 Unknown exception occurred in language.move()." << std::endl;
         exitval = 23;
         break;
       }
@@ -313,7 +313,7 @@ int BotRunner::run(BotLanguage &language, int argc, char* argv[]) {
         break;
       }
       catch (...) {
-        std::cerr << "0 0 " << "Unknown exception occurred in language.move()." << std::endl;
+        std::cerr << "0 0 Unknown exception occurred in language.move()." << std::endl;
         exitval = 26;
         break;
       }
