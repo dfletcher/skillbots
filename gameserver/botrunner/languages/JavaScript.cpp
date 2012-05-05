@@ -239,7 +239,7 @@ class JavaScript : public BotLanguage {
       exception.Reset();
     }
 
-    void collisionWithBot(const Arena &arena, bool self, const Bot &bot, const Bot &target, double damage) {
+    void collisionWithBot(const Arena &arena, bool self, const Bot &bot, const Bot &target, int x, int y, double damage) {
       if (collisionBotImpl->IsUndefined()) {
         return;
       }
@@ -249,11 +249,11 @@ class JavaScript : public BotLanguage {
       prepareBot(target, targetbot);
       prepareBot(bot, collidebot);
       prepareBot(arena.bot, selfbot);
-      Handle<Value> args[5] = {
-        arenaObject, Boolean::New(self), collidebot,
-        targetbot, Number::New(damage)
+      Handle<Value> args[7] = {
+        arenaObject, Boolean::New(self), collidebot, targetbot,
+        Integer::New(x), Integer::New(y), Number::New(damage)
       };
-      Function::Cast(*collisionBotImpl)->Call(selfbot, 5, args);
+      Function::Cast(*collisionBotImpl)->Call(selfbot, 7, args);
       exception.Reset();
     }
 

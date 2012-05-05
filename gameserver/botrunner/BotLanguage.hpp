@@ -117,9 +117,11 @@ class BotLanguage {
      *  @param self True if bot is the user's bot.
      *  @param bot Bot involved in the collision.
      *  @param other Other Bot involved in collision.
+     *  @param x Grid X where collision occurred.
+     *  @param y Grid Y where collision occurred.
      *  @param damage Damage the bot received.
      */
-    virtual void collisionWithBot(const Arena &arena, bool self, const Bot &bot, const Bot &other, double damage)=0;
+    virtual void collisionWithBot(const Arena &arena, bool self, const Bot &bot, const Bot &other, int x, int y, double damage)=0;
 
     /**
      *  Call the shotFiredHitObstacle() API function in the target language,
